@@ -38,7 +38,11 @@ export class CanvasStoryEngine {
     this.streaks = [];
     this.initSlipstream();
 
-    // 4 Monumental Environmental Walls with Chiseled Poetry
+    // Floating Brutalist Background Monoliths (Atmospheric depth pillars)
+    this.monoliths = [];
+    this.initMonoliths();
+
+    // 7 Expanded Monumental Environmental Walls with Chiseled Poetry
     this.walls = [];
     this.initWalls();
 
@@ -46,6 +50,7 @@ export class CanvasStoryEngine {
     window.addEventListener('resize', () => {
       this.resize();
       this.initWalls();
+      this.initMonoliths();
       this.initSlipstream();
     });
     window.addEventListener('mousemove', (e) => {
@@ -65,39 +70,83 @@ export class CanvasStoryEngine {
     this.ctx.scale(this.dpr, this.dpr);
   }
 
+  initMonoliths() {
+    this.monoliths = [];
+    const count = 18;
+    for (let i = 0; i < count; i++) {
+      const depth = 0.2 + (i / count) * 0.8; // 0.2 (distant) to 1.0 (foreground)
+      const width = (45 + Math.random() * 85) * depth;
+      const height = (180 + Math.random() * 320) * depth;
+      const progress = (i / count) * 0.95 + (Math.random() - 0.5) * 0.08;
+      const side = Math.random() < 0.5 ? -1 : 1;
+      const lateralDist = 0.25 + Math.random() * 0.28; // placed on left & right sides
+      this.monoliths.push({
+        depth,
+        width,
+        height,
+        progress,
+        side,
+        lateralDist,
+        tilt: (Math.random() - 0.5) * 0.12,
+        rotSpeed: (Math.random() - 0.5) * 0.03
+      });
+    }
+  }
+
   initWalls() {
     const w = this.width;
     const slabW = Math.min(980, Math.max(360, w * 0.82));
     const slabH = Math.min(210, Math.max(165, slabW * 0.22));
 
-    // Define 4 Monumental Walls
+    // 7 Expanded Monumental Chapters (Deep Literary Narrative of Collapse & Defiance)
     const wallDefs = [
       {
-        progress: 0.15,
+        progress: 0.10,
         text: 'THEY TOLD ME...',
-        manifesto: 'AND NOW, I REWRITE WHAT IS POSSIBLE',
-        sub: 'PHASE 01 // THE WEIGHT OF GRAVITY',
-        side: 0 // centered
+        manifesto: 'AND NOW, I REWRITE EVERY VERDICT CAST IN STONE',
+        sub: 'ACT I // THE BURDEN OF EXPECTATION',
+        side: 0
       },
       {
-        progress: 0.40,
+        progress: 0.24,
+        text: '...THAT GRAVITY WAS LAW...',
+        manifesto: 'LAWS WERE WRITTEN FOR THOSE WHO SURRENDERED',
+        sub: 'ACT II // THE MONOLITHIC WEIGHT',
+        side: -0.04
+      },
+      {
+        progress: 0.38,
         text: '...THERE WAS NO HOPE...',
-        manifesto: 'NO HOPE FOR FEAR TO SURVIVE',
-        sub: 'PHASE 02 // FRACTURING WALLS',
-        side: -0.05
+        manifesto: 'NO HOPE FOR THE CAGE TO EVER HOLD ME',
+        sub: 'ACT III // INTO THE UNFORGIVING SLIPSTREAM',
+        side: 0.04
       },
       {
-        progress: 0.68,
+        progress: 0.52,
+        text: '...IN FALLING SILENCE...',
+        manifesto: 'SILENCE WAS JUST THE IGNITION BEFORE THE ROAR',
+        sub: 'ACT IV // CRITICAL VELOCITY & VOID',
+        side: 0
+      },
+      {
+        progress: 0.66,
         text: '...THAT I WOULD BREAK...',
-        manifesto: 'ONLY TO SHATTER THE DARK',
-        sub: 'PHASE 03 // CRITICAL VELOCITY',
-        side: 0.05
+        manifesto: 'ONLY TO SHATTER THE NIGHT ITSELF',
+        sub: 'ACT V // STRESS FRACTURES IN CONCRETE',
+        side: -0.04
       },
       {
-        progress: 0.90,
+        progress: 0.80,
+        text: '...INTO COLD SHADOWS...',
+        manifesto: 'SHADOWS RETREAT AS LIGHT EMERGES',
+        sub: 'ACT VI // THE OBSIDIAN HORIZON',
+        side: 0.04
+      },
+      {
+        progress: 0.93,
         text: '...BEFORE I EVER REACHED THE SKY.',
-        manifesto: 'THE FLOOR WAS ALWAYS THE LAUNCHPAD',
-        sub: 'PHASE 04 // THE MIRROR BEDROCK',
+        manifesto: 'THE BEDROCK WAS ALWAYS MY LAUNCHPAD',
+        sub: 'ACT VII // THE INVERTED ZENITH',
         side: 0
       }
     ];
@@ -313,32 +362,112 @@ export class CanvasStoryEngine {
     ctx.stroke();
     ctx.restore();
 
-    // 3. High-Speed Vertical Slipstream Streaks (Clean editorial motion, no blobby clouds)
+    // 3. High-Speed Vertical Slipstream Streaks (Clean editorial motion)
     this.renderSlipstreamStreaks(ctx, w, h, truth);
 
-    // 4. MONUMENTAL ENVIRONMENTAL WALLS & CHISELED POETRY SHATTERING
+    // 4. Distant Brutalist Monolith Pillars (Multi-layered atmospheric architecture)
+    this.renderMonoliths(ctx, w, h, p, truth, t, false);
+
+    // 5. 7 Monumental Environmental Chapters with Chiseled Poetry
     this.renderFracturingWalls(ctx, w, h, p, truth);
 
-    // 5. Water Mirror Floor at 100% descent
+    // 6. Near-Field Foreground Monoliths (Framing the descent)
+    this.renderMonoliths(ctx, w, h, p, truth, t, true);
+
+    // 7. Water Mirror Floor at 100% descent
     this.renderWaterMirror(ctx, w, h, p, truth);
 
-    // 6. Flying Debris & Stone Dust
+    // 8. Flying Debris & Stone Dust
     this.renderDebris(ctx);
 
-    // 7. Dynamic Particles
+    // 9. Dynamic Slipstream Particles
     const figX = w * 0.5 + this.mouse.normX * 18;
     const figY = h * 0.48 + Math.sin(t * 1.5) * 6;
     this.renderParticles(ctx, figX, figY, truth, t);
 
-    // 8. Shockwaves on Mirror Impact
+    // 10. Shockwaves on Mirror Impact
     this.renderShockwaves(ctx, w, h);
 
     ctx.restore();
   }
 
+  renderMonoliths(ctx, w, h, p, truth, t, isForeground) {
+    const boyY = h * 0.48;
+    const totalTravel = h * 11.0;
+
+    ctx.save();
+    for (let i = 0; i < this.monoliths.length; i++) {
+      const m = this.monoliths[i];
+      // Foreground monoliths have depth > 0.65; background have depth <= 0.65
+      const matchesLayer = isForeground ? m.depth > 0.65 : m.depth <= 0.65;
+      if (!matchesLayer) continue;
+
+      // Parallax screen Y based on depth
+      const scrollY = (m.progress - p) * totalTravel * (0.6 + m.depth * 0.4);
+      const monoY = boyY + scrollY;
+
+      // Skip if offscreen
+      if (monoY < -m.height - 100 || monoY > h + m.height + 100) continue;
+
+      const monoX = w * 0.5 + m.side * (w * m.lateralDist) + this.mouse.normX * (15 * m.depth);
+
+      ctx.save();
+      ctx.translate(monoX, monoY);
+      ctx.rotate(m.tilt + Math.sin(t * 0.5 + i) * m.rotSpeed);
+
+      // Brutalist Concrete Pillar Shading with Ambient Volumetric Occlusion
+      const pillarGrad = ctx.createLinearGradient(-m.width / 2, -m.height / 2, m.width / 2, m.height / 2);
+      if (truth > 0.05) {
+        // Ascent: Warm golden obsidian monoliths with sunlight rims
+        const darkAlpha = 0.4 + m.depth * 0.5;
+        pillarGrad.addColorStop(0, `rgba(45, 34, 22, ${darkAlpha})`);
+        pillarGrad.addColorStop(0.5, `rgba(28, 20, 12, ${darkAlpha})`);
+        pillarGrad.addColorStop(1, `rgba(16, 11, 7, ${darkAlpha})`);
+      } else {
+        // Descent: Brutalist cold monolithic concrete pillars
+        const darkAlpha = 0.35 + m.depth * 0.55;
+        pillarGrad.addColorStop(0, `rgba(32, 38, 48, ${darkAlpha})`);
+        pillarGrad.addColorStop(0.5, `rgba(18, 22, 30, ${darkAlpha})`);
+        pillarGrad.addColorStop(1, `rgba(8, 11, 16, ${darkAlpha})`);
+      }
+
+      ctx.fillStyle = pillarGrad;
+      ctx.fillRect(-m.width / 2, -m.height / 2, m.width, m.height);
+
+      // Concrete Formwork Hairline Edges & Seams
+      ctx.strokeStyle = truth > 0.05
+        ? `rgba(251, 191, 36, ${0.12 * m.depth + truth * 0.2})`
+        : `rgba(147, 165, 207, ${0.12 * m.depth})`;
+      ctx.lineWidth = 1.0;
+      ctx.strokeRect(-m.width / 2, -m.height / 2, m.width, m.height);
+
+      // Architectural Cast Joints across monolith height
+      const joints = 3;
+      for (let j = 1; j < joints; j++) {
+        const jointY = -m.height / 2 + (m.height / joints) * j;
+        ctx.beginPath();
+        ctx.moveTo(-m.width / 2, jointY);
+        ctx.lineTo(m.width / 2, jointY);
+        ctx.stroke();
+      }
+
+      // High-Fashion Editorial Monolith Numbering Stencils
+      if (m.depth > 0.55) {
+        ctx.font = '700 9px "Space Mono", monospace';
+        ctx.textAlign = 'center';
+        ctx.letterSpacing = '0.25em';
+        ctx.fillStyle = truth > 0.05 ? 'rgba(251, 191, 36, 0.4)' : 'rgba(255, 255, 255, 0.25)';
+        ctx.fillText(`MN-${10 + i}`, 0, -m.height / 2 + 22);
+      }
+
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
   renderFracturingWalls(ctx, w, h, p, truth) {
     const boyY = h * 0.48; // Boy's screen position
-    const totalTravel = h * 4.2; // Full scroll journey
+    const totalTravel = h * 11.0; // Paced cinematic scroll journey for 7 chapters
 
     this.walls.forEach((wall) => {
       // Calculate current vertical screen position of this wall based on scroll

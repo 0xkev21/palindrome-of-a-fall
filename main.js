@@ -13,11 +13,12 @@ gsap.registerPlugin(ScrollTrigger);
 // LENIS SMOOTH SCROLL ENGINE INITIALIZATION
 // ==========================================
 const lenis = new Lenis({
-  lerp: 0.08, // Silky luxury inertia (authentic Awwwards physics)
-  wheelMultiplier: 1.0,
-  touchMultiplier: 1.5,
+  lerp: 0.05, // Heavy, cinematic, weighted fluid momentum (much smoother & less twitchy)
+  wheelMultiplier: 0.65, // Calms wheel speed so user doesn't fly past chapters
+  touchMultiplier: 0.9,
   smoothWheel: true,
   infinite: false,
+  respectReducedMotion: false, // Ensure buttery physics remain active
 });
 
 // Synchronize Lenis with GSAP ScrollTrigger
@@ -26,7 +27,7 @@ lenis.on('scroll', (e) => {
   state.scrollVelocity = e.velocity || 0;
 });
 
-// Drive Lenis via GSAP's central RAF ticker
+// Drive Lenis smoothly via GSAP's central RAF ticker
 gsap.ticker.add((time) => {
   lenis.raf(time * 1000);
 });
@@ -140,61 +141,50 @@ const hudVelocity = document.getElementById('hud-velocity');
 const altThumb = document.getElementById('alt-thumb');
 const invertBtn = document.getElementById('invert-view-btn');
 const invertLabel = document.getElementById('invert-label');
-const launchBtn = document.getElementById('launch-climax-btn');
-const climaxBox = document.getElementById('climax-action-box');
+const ascentHintDock = document.getElementById('ascent-hint-dock');
 
 function applyAscentModeUI(isAscent) {
   state.isAscentMode = isAscent;
 
   if (isAscent) {
     document.body.classList.add('ascent-mode');
-    if (climaxBox) climaxBox.classList.remove('visible');
-    invertBtn.classList.add('ascent-highlight');
-    hudBadge.textContent = 'Ascent // Defiance & Wings Ignited';
-    hudGravity.innerHTML = 'GRAVITY: <strong style="color: #fbbf24;">-19.6 m/s² (ZERO-G THRUST)</strong>';
-    invertLabel.textContent = 'RESTORE DESCENT';
+    if (ascentHintDock) ascentHintDock.classList.remove('visible');
+    if (invertBtn) invertBtn.classList.add('ascent-highlight');
+    if (hudBadge) hudBadge.textContent = 'Ascent // Defiance & Wings Ignited';
+    if (hudGravity) hudGravity.innerHTML = 'GRAVITY: <strong style="color: #fbbf24;">-19.6 m/s² (ZERO-G THRUST)</strong>';
+    if (invertLabel) invertLabel.textContent = 'RESTORE DESCENT';
   } else {
     document.body.classList.remove('ascent-mode');
-    invertBtn.classList.remove('ascent-highlight');
-    hudBadge.textContent = 'Descent // Burnout & Collapse';
-    hudGravity.innerHTML = 'GRAVITY: <strong>+9.81 m/s² (PULL)</strong>';
-    invertLabel.textContent = 'INVERT AXIS';
-    if (climaxBox && state.scrollProgress >= 0.86) {
-      climaxBox.classList.add('visible');
-    }
+    if (invertBtn) invertBtn.classList.remove('ascent-highlight');
+    if (hudBadge) hudBadge.textContent = 'Descent // Burnout & Collapse';
+    if (hudGravity) hudGravity.innerHTML = 'GRAVITY: <strong>+9.81 m/s² (PULL)</strong>';
+    if (invertLabel) invertLabel.textContent = 'INVERT AXIS';
   }
 }
 
 // Invert Perspective & Truth Mode Transition Function
-function toggleInversion(triggerAutoAscentScroll = false) {
-  const targetMode = !state.isAscentMode;
-  applyAscentModeUI(targetMode);
+function setAscentMode(isAscent) {
+  if (state.isAscentMode === isAscent) return;
+  applyAscentModeUI(isAscent);
 
   gsap.to(state, {
-    truthMode: targetMode ? 1.0 : 0.0,
-    duration: 2.0,
+    truthMode: isAscent ? 1.0 : 0.0,
+    duration: 1.8,
     ease: 'power3.inOut'
   });
 
-  if (targetMode) {
+  if (isAscent) {
     storyEngine.triggerImpact();
     sound.playImpact();
-    setTimeout(() => sound.playAscentChord(), 600);
-
-    if (triggerAutoAscentScroll) {
-      // Auto-propel upward to experience the ascension
-      lenis.scrollTo(0, {
-        duration: 8.5,
-        easing: (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2
-      });
-    }
+    setTimeout(() => sound.playAscentChord(), 450);
   } else {
     sound.playChime(330, 0.1, 1.5);
   }
 }
 
-invertBtn.addEventListener('click', () => toggleInversion(false));
-launchBtn.addEventListener('click', () => toggleInversion(true));
+if (invertBtn) {
+  invertBtn.addEventListener('click', () => setAscentMode(!state.isAscentMode));
+}
 
 // ==========================================
 // 6. SCROLLTRIGGER & PARALLAX TRACKING
@@ -215,7 +205,8 @@ ScrollTrigger.create({
 
     sound.updateScroll(p, self.getVelocity() * 0.001);
 
-    // Trigger water ripple when reaching bottom (without auto-changing mode)
+    // 1. Reaching Bedrock (Floor Impact):
+    // Play obsidian mirror impact sound & shockwave
     if (p > 0.94 && !state.hasTriggeredBottomImpact) {
       state.hasTriggeredBottomImpact = true;
       storyEngine.triggerImpact();
@@ -224,16 +215,34 @@ ScrollTrigger.create({
       state.hasTriggeredBottomImpact = false;
     }
 
-    // Show Launch Button docked cleanly at the bottom when approaching obsidian mirror floor
-    if (climaxBox) {
-      if (p >= 0.86 && !state.isAscentMode) {
-        climaxBox.classList.add('visible');
+    // 2. Hint Dock: When reaching bedrock in descent mode, hint user to scroll back up!
+    if (ascentHintDock) {
+      if (p >= 0.88 && !state.isAscentMode) {
+        ascentHintDock.classList.add('visible');
       } else {
-        climaxBox.classList.remove('visible');
+        ascentHintDock.classList.remove('visible');
       }
+    }
+
+    // 3. Dynamic Mode Transition:
+    // When the user has reached the bottom (hasTriggeredBottomImpact) and starts scrolling back UP:
+    // Immediately transform into Ascent Mode (wings ignite, kintsugi awakens, truthMode = 1)!
+    if (state.hasTriggeredBottomImpact && !state.isAscentMode && (self.direction === -1 || (self.getVelocity() || 0) < -2)) {
+      setAscentMode(true);
     }
   }
 });
+
+// Clickable Bedrock Ascent Hint (Smoothly auto-scrolls upwards into zenith light)
+if (ascentHintDock) {
+  ascentHintDock.addEventListener('click', () => {
+    setAscentMode(true);
+    lenis.scrollTo(0, {
+      duration: 3.5,
+      easing: (t) => 1 - Math.pow(1 - t, 3)
+    });
+  });
+}
 
 // ==========================================
 // 7. RENDER LOOP
