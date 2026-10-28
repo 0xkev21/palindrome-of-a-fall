@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Palindrome of a Fall — Falling vs. Flying</title>
+  
+  <!-- High Fashion & Editorial Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #030306;
+      --text: #eaebee;
+      --text-muted: rgba(234, 235, 238, 0.65);
+      --accent: #93a5cf;
+      --ember: #f97316;
+      --truth-gold: #fbbf24;
+      --truth-amber: #f59e0b;
+      --truth-glow: rgba(251, 191, 36, 0.4);
+      --font-display: 'Cinzel', serif;
+      --font-title: 'Syne', sans-serif;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
+      --font-mono: 'Space Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Lenis Scroll Rules */
+    html.lenis, html.lenis body {
+      height: auto !important;
+    }
+    .lenis.lenis-smooth {
+      scroll-behavior: auto !important;
+    }
+    .lenis.lenis-smooth [data-lenis-prevent] {
+      overscroll-behavior: contain;
+    }
+    .lenis.lenis-stopped {
+      overflow: hidden;
+    }
+
+    html {
+      width: 100%;
+      min-height: 100%;
+      background-color: var(--bg);
+      overflow-x: hidden;
+    }
+
+    body {
+      width: 100%;
+      min-height: 100%;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      overflow-x: clip;
+      cursor: none;
+      transition: background-color 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    body.ascent-mode {
+      --bg: #080706;
+    }
+
+
+
+    /* Preloader */
+    #preloader {
+      position: fixed;
+      inset: 0;
+      background: #020204;
+      z-index: 9000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.8s ease;
+    }
+    #preloader.loaded {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none !important;
+    }
+    .loader-brand {
+      font-family: var(--font-display);
+      font-size: clamp(1rem, 2vw, 1.4rem);
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+      color: #fff;
+    }
+    .loader-sub {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      color: rgba(255, 255, 255, 0.4);
+      margin-bottom: 2rem;
+      text-transform: uppercase;
+    }
+    .loader-track {
+      width: 280px;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+      border-radius: 99px;
+    }
+    .loader-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #93a5cf, #ffffff);
+      transition: width 0.12s ease-out;
+    }
+
+    /* Custom Kinetic Cursor */
+    .cursor-dot {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 8px;
+      height: 8px;
+      background: #ffffff;
+      border-radius: 50%;
+      pointer-events: none !important;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: width 0.3s, height 0.3s, background 0.3s;
+      mix-blend-mode: difference;
+    }
+    .cursor-ring {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 38px;
+      height: 38px;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 50%;
+      pointer-events: none !important;
+      z-index: 9998;
+      transform: translate(-50%, -50%);
+      transition: width 0.3s, height 0.3s, border-color 0.4s;
+    }
+    body.hovering .cursor-dot {
+      width: 26px;
+      height: 26px;
+      background: #ffffff;
+    }
+    body.hovering .cursor-ring {
+      width: 52px;
+      height: 52px;
+      border-color: rgba(251, 191, 36, 0.65);
+    }
+    body.ascent-mode .cursor-dot {
+      background: var(--truth-gold);
+    }
+    body.ascent-mode .cursor-ring {
+      border-color: rgba(251, 191, 36, 0.5);
+    }
+
+    /* 3D WebGL Canvas Layer */
+    .canvas-container {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      pointer-events: none !important;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Hero Anime Character Container */
+    .character-container {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: clamp(340px, 48vw, 560px);
+      height: auto;
+      pointer-events: none !important;
+      z-index: 6;
+      will-change: transform;
+    }
+    .hero-character-wrapper {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .hero-character-svg {
+      width: 100%;
+      height: auto;
+      overflow: visible;
+      transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .hero-descent {
+      opacity: 1;
+      transform: scale(1);
+      filter: drop-shadow(0 20px 45px rgba(0, 0, 0, 0.7));
+    }
+    .hero-ascent {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.9);
+      opacity: 0;
+      pointer-events: none;
+      filter: drop-shadow(0 0 50px rgba(251, 191, 36, 0.65)) drop-shadow(0 25px 45px rgba(0, 0, 0, 0.75));
+    }
+    body.ascent-mode .hero-descent {
+      opacity: 0;
+      transform: scale(1.08);
+      pointer-events: none;
+    }
+    body.ascent-mode .hero-ascent {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+      pointer-events: auto;
+    }
+    .soaring-wings .wing-left {
+      transform-origin: 250px 150px;
+      animation: flapWingLeft 2.4s infinite ease-in-out;
+    }
+    .soaring-wings .wing-right {
+      transform-origin: 290px 150px;
+      animation: flapWingRight 2.4s infinite ease-in-out;
+    }
+    @keyframes flapWingLeft {
+      0%, 100% { transform: rotate(0deg) scale(1); }
+      50% { transform: rotate(5deg) scale(1.05); }
+    }
+    @keyframes flapWingRight {
+      0%, 100% { transform: rotate(0deg) scale(1); }
+      50% { transform: rotate(-5deg) scale(1.05); }
+    }
+
+    /* High Fashion Editorial HUD */
+    .hud {
+      position: fixed;
+      top: 2rem;
+      left: 2.5rem;
+      right: 2.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+    .hud-left {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      pointer-events: auto;
+    }
+    .hud-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      letter-spacing: 0.25em;
+      font-size: 0.85rem;
+      color: #fff;
+    }
+    .hud-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--accent);
+      transition: color 0.5s;
+    }
+    .hud-badge::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 10px currentColor;
+    }
+    body.ascent-mode .hud-badge {
+      color: var(--truth-gold);
+    }
+
+    .hud-center {
+      text-align: center;
+      color: rgba(255, 255, 255, 0.45);
+    }
+    .hud-center strong {
+      color: #fff;
+    }
+
+    .hud-right {
+      display: flex;
+      gap: 1.25rem;
+      align-items: center;
+      pointer-events: auto;
+    }
+    .hud-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      color: #fff;
+      padding: 0.5rem 1.1rem;
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      backdrop-filter: blur(10px);
+      cursor: pointer;
+    }
+    .hud-btn:hover {
+      border-color: #fff;
+      background: rgba(255, 255, 255, 0.18);
+      transform: translateY(-1px);
+    }
+    body.ascent-mode .hud-btn.ascent-highlight {
+      border-color: var(--truth-gold);
+      color: var(--truth-gold);
+      box-shadow: 0 0 18px rgba(251, 191, 36, 0.3);
+    }
+
+    /* Sound Visualizer Bars */
+    .sound-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 10px;
+    }
+    .sound-bar {
+      width: 2px;
+      height: 3px;
+      background: currentColor;
+      border-radius: 1px;
+      transition: height 0.15s ease;
+    }
+    .audio-active .sound-bar:nth-child(1) { animation: barPulse 0.6s infinite ease-in-out; }
+    .audio-active .sound-bar:nth-child(2) { animation: barPulse 0.8s infinite ease-in-out 0.1s; }
+    .audio-active .sound-bar:nth-child(3) { animation: barPulse 0.5s infinite ease-in-out 0.2s; }
+    @keyframes barPulse {
+      0%, 100% { height: 3px; }
+      50% { height: 10px; }
+    }
+
+    /* Altimeter Minimap */
+    .altimeter-nav {
+      position: fixed;
+      right: 2.5rem;
+      top: 50%;
+      transform: translateY(-50%);
+      height: 240px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 100;
+      pointer-events: none;
+    }
+    .altimeter-track {
+      position: relative;
+      width: 2px;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.15);
+    }
+    .altimeter-thumb {
+      position: absolute;
+      left: 50%;
+      top: 0%;
+      transform: translate(-50%, -50%);
+      width: 8px;
+      height: 28px;
+      background: #ffffff;
+      border-radius: 4px;
+      box-shadow: 0 0 12px rgba(255, 255, 255, 0.7);
+      transition: background 0.4s, box-shadow 0.4s;
+    }
+    body.ascent-mode .altimeter-thumb {
+      background: var(--truth-gold);
+      box-shadow: 0 0 18px var(--truth-glow);
+    }
+    .altimeter-label {
+      position: absolute;
+      right: 18px;
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.15em;
+      color: rgba(255, 255, 255, 0.5);
+      white-space: nowrap;
+    }
+    .altimeter-label.top { top: 0; }
+    .altimeter-label.bottom { bottom: 0; }
+
+    /* Scrollable Poetry Track */
+    .scroll-container {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      pointer-events: auto;
+    }
+
+    /* Pure Atmospheric Typography Stage (NO clunky cards or boxes) */
+    .scene-section {
+      min-height: 125vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 16vh 2rem 8vh;
+      position: relative;
+    }
+
+    .poetry-stage {
+      max-width: 840px;
+      width: 100%;
+      text-align: center;
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      position: relative;
+      will-change: transform, opacity, filter, letter-spacing;
+      pointer-events: none;
+    }
+    .poetry-stage * {
+      pointer-events: auto;
+    }
+
+    .card-meta {
+      display: flex;
+      justify-content: center;
+      gap: 2.5rem;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.35em;
+      color: rgba(255, 255, 255, 0.5);
+      margin-bottom: 1.5rem;
+      text-transform: uppercase;
+      border: none;
+      padding: 0;
+    }
+    .card-index {
+      font-weight: 700;
+      color: var(--accent);
+      text-shadow: 0 0 15px rgba(147, 165, 207, 0.4);
+    }
+    body.ascent-mode .card-index {
+      color: var(--truth-gold);
+      text-shadow: 0 0 15px rgba(251, 191, 36, 0.5);
+    }
+
+    /* Poetry Headline - Floating monumental typography */
+    .poetry-line {
+      font-family: var(--font-display);
+      font-size: clamp(2.6rem, 6vw, 4.8rem);
+      font-weight: 600;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+      margin-bottom: 1.5rem;
+      color: #ffffff;
+      text-shadow: 0 0 35px rgba(255, 255, 255, 0.35), 0 4px 24px rgba(0, 0, 0, 0.95);
+      transition: letter-spacing 0.3s ease, filter 0.3s ease;
+    }
+    body.ascent-mode .poetry-line {
+      background: linear-gradient(135deg, #ffffff 20%, #fef08a 60%, #fbbf24 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 45px rgba(251, 191, 36, 0.5);
+    }
+
+    /* Subtext description */
+    .descent-subtext {
+      font-size: 1.15rem;
+      line-height: 1.85;
+      color: rgba(234, 235, 238, 0.78);
+      font-weight: 300;
+      max-width: 620px;
+      margin: 0 auto;
+      text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
+      transition: opacity 0.5s ease;
+    }
+    body.ascent-mode .descent-subtext {
+      display: none;
+    }
+
+    /* Triumphant Manifesto Reveal (Ascent Mode) */
+    .manifesto-line {
+      display: none;
+      font-family: var(--font-title);
+      font-size: clamp(1.2rem, 2.5vw, 1.6rem);
+      font-weight: 600;
+      line-height: 1.65;
+      color: var(--truth-gold);
+      margin: 1.5rem auto 0;
+      max-width: 660px;
+      text-shadow: 0 0 30px rgba(251, 191, 36, 0.6), 0 3px 15px rgba(0, 0, 0, 0.9);
+      animation: fadeInManifesto 0.8s ease forwards;
+    }
+    body.ascent-mode .manifesto-line {
+      display: block;
+    }
+    @keyframes fadeInManifesto {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Floating Climax Launchpad Action - Refined High-Fashion Editorial Trigger */
+    .climax-action-box {
+      position: fixed;
+      bottom: 2.6rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      z-index: 80;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .climax-action-box.visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(-50%) translateY(0);
+    }
+    body.ascent-mode .climax-action-box {
+      opacity: 0 !important;
+      pointer-events: none !important;
+      transform: translateX(-50%) translateY(20px) !important;
+    }
+    .launch-btn {
+      padding: 0.82rem clamp(1.4rem, 4vw, 2.4rem);
+      max-width: calc(100vw - 2.5rem);
+      background: rgba(10, 13, 20, 0.82);
+      color: #eaebee;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      font-weight: 500;
+      letter-spacing: clamp(0.1em, 0.18em, 0.18em);
+      font-size: clamp(0.68rem, 2vw, 0.74rem);
+      text-transform: uppercase;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.75), 0 0 1px rgba(255, 255, 255, 0.2);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.65rem;
+      white-space: nowrap;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .launch-btn .launch-arrow {
+      color: var(--truth-gold);
+      font-size: 0.95rem;
+      line-height: 1;
+      transition: transform 0.3s ease;
+    }
+    .launch-btn:hover {
+      background: rgba(251, 191, 36, 0.1);
+      border-color: rgba(251, 191, 36, 0.65);
+      color: #ffffff;
+      transform: scale(1.03) translateY(-2px);
+      box-shadow: 0 0 35px rgba(251, 191, 36, 0.22), 0 10px 28px rgba(0, 0, 0, 0.85);
+    }
+    .launch-btn:hover .launch-arrow {
+      transform: translateY(-2px);
+    }
+    .climax-hint {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.22em;
+      color: rgba(255, 255, 255, 0.42);
+      text-transform: uppercase;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.95);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .hud {
+        top: 1.2rem;
+        left: 1.2rem;
+        right: 1.2rem;
+      }
+      .hud-center {
+        display: none;
+      }
+      .editorial-card {
+        padding: 3rem 1.75rem;
+      }
+      .altimeter-nav {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+
+
+  <!-- Preloader -->
+  <div id="preloader">
+    <div class="loader-brand">Palindrome of a Fall</div>
+    <div class="loader-sub">Synthesizing Visual Narrative & Sound</div>
+    <div class="loader-track">
+      <div class="loader-fill" id="loader-fill"></div>
+    </div>
+  </div>
+
+  <!-- Custom Kinetic Magnetic Cursor -->
+  <div class="cursor-dot" id="cursor-dot"></div>
+  <div class="cursor-ring" id="cursor-ring"></div>
+
+  <!-- 2D Cinematic Canvas -->
+  <div class="canvas-container">
+    <canvas id="story-canvas"></canvas>
+  </div>
+
+  <!-- Hero Freefall Character Illustration -->
+  <div id="character-container" class="character-container"></div>
+
+  <!-- Editorial HUD Header -->
+  <header class="hud">
+    <div class="hud-left">
+      <div class="hud-title">Palindrome of a Fall</div>
+      <div class="hud-badge" id="hud-mode-badge">Descent // Burnout & Collapse</div>
+    </div>
+
+    <div class="hud-center">
+      <div id="hud-gravity">GRAVITY: <strong>+9.81 m/s² (PULL)</strong></div>
+      <div id="hud-velocity" style="font-size: 0.65rem; color: rgba(255,255,255,0.35); margin-top: 2px;">TERMINAL VELOCITY: 0.00 M/S</div>
+    </div>
+
+    <div class="hud-right">
+      <button class="hud-btn interactive" id="invert-view-btn" title="Flip Camera 180° Inversion">
+        <span id="invert-icon">↕</span> <span id="invert-label">INVERT AXIS</span>
+      </button>
+
+      <button class="hud-btn interactive" id="audio-toggle-btn" title="Toggle Cinematic Soundscape">
+        <span class="sound-bars" id="sound-indicator">
+          <span class="sound-bar"></span>
+          <span class="sound-bar"></span>
+          <span class="sound-bar"></span>
+        </span>
+        <span id="audio-btn-label">SOUND: OFF</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Interactive Altimeter Minimap -->
+  <nav class="altimeter-nav" aria-label="Altimeter">
+    <span class="altimeter-label top">ZENITH // 10K FT</span>
+    <div class="altimeter-track">
+      <div class="altimeter-thumb" id="alt-thumb"></div>
+    </div>
+    <span class="altimeter-label bottom">MIRROR FLOOR // 0 FT</span>
+  </nav>
+
+  <!-- Environmental Scroll Track -->
+  <main class="scroll-container" id="scroll-track">
+    <!-- PHASE 01: "THEY TOLD ME..." -->
+    <section class="scene-section" data-wall="1"></section>
+
+    <!-- PHASE 02: "...THERE WAS NO HOPE..." -->
+    <section class="scene-section" data-wall="2"></section>
+
+    <!-- PHASE 03: "...THAT I WOULD BREAK..." -->
+    <section class="scene-section" data-wall="3"></section>
+
+    <!-- PHASE 04: "...BEFORE I EVER REACHED THE SKY." (MIRROR LAUNCHPAD) -->
+    <section class="scene-section climax-section" data-wall="4"></section>
+  </main>
+
+  <!-- Climax Launchpad Action (Anchored Elegantly in the Lower Viewport Above Mirror Floor) -->
+  <div class="climax-action-box" id="climax-action-box">
+    <button class="launch-btn interactive" id="launch-climax-btn">
+      <span class="launch-arrow">↑</span>
+      <span>INVERT PERSPECTIVE // IGNITE WINGS</span>
+    </button>
+    <span class="climax-hint">Bedrock Reached — Click to reverse gravity & soar</span>
+  </div>
+
+  <!-- Application Entry -->
+  <script type="module" src="/main.js"></script>
+</body>
+</html>
