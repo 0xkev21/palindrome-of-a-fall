@@ -631,3 +631,26 @@ window.addEventListener("resize", () => {
   lenis.resize();
   ScrollTrigger.refresh();
 });
+
+// Automation / Capture helper
+window.__PALINDROME__ = {
+  enterExperience,
+  setAscentMode,
+  state,
+  storyEngine,
+  particleEngine,
+  ScrollTrigger,
+  lenis,
+  seek: (p, isAscent) => {
+    enterExperience();
+    if (isAscent !== undefined) {
+      applyAscentModeUI(isAscent);
+      state.truthMode = isAscent ? 1 : 0;
+      if (particleEngine) particleEngine.setTruthMode(state.truthMode);
+      if (sound) sound.setAscentMode(isAscent);
+    }
+    const maxScroll = document.body.scrollHeight - window.innerHeight;
+    lenis.scrollTo(p * maxScroll, { immediate: true });
+    ScrollTrigger.update();
+  }
+};
