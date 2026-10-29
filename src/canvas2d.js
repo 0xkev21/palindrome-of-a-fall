@@ -1,3 +1,5 @@
+import { ParticleImageEngine } from './particleImageEngine.js';
+
 /**
  * 2D Canvas Cinematic Story Engine
  * Texts are carved directly into brutalist concrete walls in the environment.
@@ -6,9 +8,10 @@
  * In Ascent mode, golden kintsugi lightning welds the fractured slabs back together.
  */
 export class CanvasStoryEngine {
-  constructor(canvas) {
+  constructor(canvas, { reduceMotion = false } = {}) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d', { alpha: false });
+    this.reduceMotion = reduceMotion;
     this.width = window.innerWidth;
     this.height = window.innerHeight;
     this.dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -41,6 +44,11 @@ export class CanvasStoryEngine {
     // Floating Brutalist Background Monoliths (Atmospheric depth pillars)
     this.monoliths = [];
     this.initMonoliths();
+
+    // Full-Screen Image-to-Particles Physics Engine (Images themselves ARE the particles)
+    this.particleImageEngine = new ParticleImageEngine();
+    // (reduced motion keeps the artwork but stops the ambient flutter/scatter)
+    this.particleImageEngine.motionScale = this.reduceMotion ? 0 : 1;
 
     // 7 Expanded Monumental Environmental Walls with Chiseled Poetry
     this.walls = [];
@@ -277,6 +285,22 @@ export class CanvasStoryEngine {
     this.scrollProgress = scrollProgress;
     this.scrollVelocity = scrollVelocity;
     this.truthMode = truthMode;
+
+    const figX = this.width * 0.5 + this.mouse.normX * 18;
+    const figY = this.height * 0.48 + Math.sin(time * 1.5) * 6;
+
+    this.particleImageEngine.update(
+      time,
+      scrollProgress,
+      scrollVelocity,
+      truthMode,
+      this.mouse.x,
+      this.mouse.y,
+      figX,
+      figY,
+      this.width,
+      this.height
+    );
   }
 
   render() {
@@ -362,30 +386,35 @@ export class CanvasStoryEngine {
     ctx.stroke();
     ctx.restore();
 
+    // Boy's screen focal center for wake collision & focal drift
+    const figX = w * 0.5 + this.mouse.normX * 18;
+    const figY = h * 0.48 + Math.sin(t * 1.5) * 6;
+
     // 3. High-Speed Vertical Slipstream Streaks (Clean editorial motion)
     this.renderSlipstreamStreaks(ctx, w, h, truth);
 
     // 4. Distant Brutalist Monolith Pillars (Multi-layered atmospheric architecture)
     this.renderMonoliths(ctx, w, h, p, truth, t, false);
 
-    // 5. 7 Monumental Environmental Chapters with Chiseled Poetry
+    // 5. Full-Screen Image-to-Particles Scene (The scene images themselves ARE the particles!)
+    this.particleImageEngine.render(ctx, w, h, truth);
+
+    // 6. 7 Monumental Environmental Chapters with Chiseled Poetry
     this.renderFracturingWalls(ctx, w, h, p, truth);
 
-    // 6. Near-Field Foreground Monoliths (Framing the descent)
+    // 7. Near-Field Foreground Monoliths (Framing the descent)
     this.renderMonoliths(ctx, w, h, p, truth, t, true);
 
-    // 7. Water Mirror Floor at 100% descent
+    // 8. Water Mirror Floor at 100% descent
     this.renderWaterMirror(ctx, w, h, p, truth);
 
-    // 8. Flying Debris & Stone Dust
+    // 9. Flying Debris & Stone Dust
     this.renderDebris(ctx);
 
-    // 9. Dynamic Slipstream Particles
-    const figX = w * 0.5 + this.mouse.normX * 18;
-    const figY = h * 0.48 + Math.sin(t * 1.5) * 6;
+    // 10. Dynamic Slipstream Particles on the Boy
     this.renderParticles(ctx, figX, figY, truth, t);
 
-    // 10. Shockwaves on Mirror Impact
+    // 11. Shockwaves on Mirror Impact
     this.renderShockwaves(ctx, w, h);
 
     ctx.restore();

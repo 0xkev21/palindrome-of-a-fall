@@ -1,105 +1,155 @@
 /**
- * Web Audio API Procedural Sound Design
- * Sub-bass drones, wind noise generator, stone shattering crunch, and crystalline ascension chimes.
+ * High-Quality Studio Audio Engine
+ * Loads and plays stereo soundscapes (160 kbps MP3, ~10x smaller than the
+ * original 16-bit WAV masters):
+ * - ambient_descent.mp3: Deep binaural sub-drone & dark atmospheric descent pad
+ * - ambient_ascent.mp3: Luminous golden harmonic pad & solfeggio ascension frequencies
+ * - stone_shatter.mp3: Crisp stone crack, bass transient, and crumbling debris
+ * - bedrock_impact.mp3: Cavernous obsidian impact with subterranean boom
+ * - wings_ignite.mp3: Ethereal angelic arpeggio & solar ignition swell
  */
+
 export class SoundDesign {
   constructor() {
     this.ctx = null;
     this.isActive = false;
-
-    // Nodes
-    this.droneOsc1 = null;
-    this.droneOsc2 = null;
-    this.droneGain = null;
-    this.filter = null;
-
-    this.windNode = null;
-    this.windGain = null;
-    this.windFilter = null;
-
+    this.buffers = {};
+    this.sources = {};
+    this.gains = {};
+    this.masterGain = null;
+    this.isLoaded = false;
+    this.truth = 0;
     this.lastCrackTime = 0;
+
+    this.audioPaths = {
+      ambientDescent: '/audio/ambient_descent.mp3',
+      ambientAscent: '/audio/ambient_ascent.mp3',
+      stoneShatter: '/audio/stone_shatter.mp3',
+      bedrockImpact: '/audio/bedrock_impact.mp3',
+      wingsIgnite: '/audio/wings_ignite.mp3'
+    };
   }
 
-  init() {
-    if (this.ctx) return;
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    this.ctx = new AudioContext();
+  async init() {
+    // Guard against concurrent first clicks starting two AudioContexts.
+    if (this.ctx) return this.readyPromise;
+    this.readyPromise = (async () => {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      this.ctx = new AudioContext();
 
-    // 1. Binaural Sub Drone (43.65Hz / F1 and 44.4Hz)
-    this.droneOsc1 = this.ctx.createOscillator();
-    this.droneOsc2 = this.ctx.createOscillator();
-    this.droneGain = this.ctx.createGain();
-    this.filter = this.ctx.createBiquadFilter();
+      this.masterGain = this.ctx.createGain();
+      this.masterGain.gain.setValueAtTime(0.0001, this.ctx.currentTime);
+      this.masterGain.connect(this.ctx.destination);
 
-    this.droneOsc1.type = 'sawtooth';
-    this.droneOsc1.frequency.setValueAtTime(43.65, this.ctx.currentTime);
+      // Create gain nodes for ambient loops
+      this.gains.descent = this.ctx.createGain();
+      this.gains.descent.gain.setValueAtTime(0.7, this.ctx.currentTime);
+      this.gains.descent.connect(this.masterGain);
 
-    this.droneOsc2.type = 'sine';
-    this.droneOsc2.frequency.setValueAtTime(44.25, this.ctx.currentTime);
+      this.gains.ascent = this.ctx.createGain();
+      this.gains.ascent.gain.setValueAtTime(0.0001, this.ctx.currentTime);
+      this.gains.ascent.connect(this.masterGain);
 
-    this.filter.type = 'lowpass';
-    this.filter.frequency.setValueAtTime(120, this.ctx.currentTime);
-    this.filter.Q.setValueAtTime(3.5, this.ctx.currentTime);
+      // SFX Bus
+      this.gains.sfx = this.ctx.createGain();
+      this.gains.sfx.gain.setValueAtTime(0.85, this.ctx.currentTime);
+      this.gains.sfx.connect(this.masterGain);
 
-    this.droneGain.gain.setValueAtTime(0.0001, this.ctx.currentTime);
-
-    this.droneOsc1.connect(this.filter);
-    this.droneOsc2.connect(this.filter);
-    this.filter.connect(this.droneGain);
-    this.droneGain.connect(this.ctx.destination);
-
-    this.droneOsc1.start();
-    this.droneOsc2.start();
-
-    // 2. Filtered Wind Noise
-    this.initWindNoise();
+      // Preload audio files
+      await this.loadAllBuffers();
+    })();
+    return this.readyPromise;
   }
 
-  initWindNoise() {
-    const bufferSize = this.ctx.sampleRate * 2;
-    const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-    const output = noiseBuffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      output[i] = Math.random() * 2 - 1;
+  async loadBuffer(url) {
+    try {
+      const response = await fetch(url);
+      const arrayBuffer = await response.arrayBuffer();
+      return await this.ctx.decodeAudioData(arrayBuffer);
+    } catch (err) {
+      console.warn(`[SoundDesign] Error loading audio from ${url}:`, err);
+      return null;
+    }
+  }
+
+  async loadAllBuffers() {
+    const entries = Object.entries(this.audioPaths);
+    await Promise.all(
+      entries.map(async ([key, url]) => {
+        const buffer = await this.loadBuffer(url);
+        if (buffer) {
+          this.buffers[key] = buffer;
+        }
+      })
+    );
+    this.isLoaded = true;
+
+    // Start ambient loops if active
+    if (this.isActive) {
+      this.startAmbientLoops();
+    }
+  }
+
+  startAmbientLoops() {
+    if (!this.ctx || !this.isLoaded) return;
+
+    // Ambient Descent Loop
+    if (this.buffers.ambientDescent && !this.sources.descent) {
+      const srcDesc = this.ctx.createBufferSource();
+      srcDesc.buffer = this.buffers.ambientDescent;
+      srcDesc.loop = true;
+      srcDesc.connect(this.gains.descent);
+      srcDesc.start();
+      this.sources.descent = srcDesc;
     }
 
-    const whiteNoise = this.ctx.createBufferSource();
-    whiteNoise.buffer = noiseBuffer;
-    whiteNoise.loop = true;
+    // Ambient Ascent Loop
+    if (this.buffers.ambientAscent && !this.sources.ascent) {
+      const srcAsc = this.ctx.createBufferSource();
+      srcAsc.buffer = this.buffers.ambientAscent;
+      srcAsc.loop = true;
+      srcAsc.connect(this.gains.ascent);
+      srcAsc.start();
+      this.sources.ascent = srcAsc;
+    }
 
-    this.windFilter = this.ctx.createBiquadFilter();
-    this.windFilter.type = 'bandpass';
-    this.windFilter.frequency.setValueAtTime(380, this.ctx.currentTime);
-    this.windFilter.Q.setValueAtTime(1.8, this.ctx.currentTime);
-
-    this.windGain = this.ctx.createGain();
-    this.windGain.gain.setValueAtTime(0.0001, this.ctx.currentTime);
-
-    whiteNoise.connect(this.windFilter);
-    this.windFilter.connect(this.windGain);
-    this.windGain.connect(this.ctx.destination);
-    whiteNoise.start();
+    this.updateTruth(this.truth);
   }
 
-  toggle() {
-    if (!this.ctx) this.init();
+  stopAmbientLoops() {
+    if (this.sources.descent) {
+      try { this.sources.descent.stop(); } catch (_) {}
+      this.sources.descent = null;
+    }
+    if (this.sources.ascent) {
+      try { this.sources.ascent.stop(); } catch (_) {}
+      this.sources.ascent = null;
+    }
+  }
+
+  async toggle() {
+    if (!this.ctx) {
+      await this.init();
+    }
+
     if (this.ctx.state === 'suspended') {
-      this.ctx.resume();
+      await this.ctx.resume();
     }
 
     this.isActive = !this.isActive;
     const now = this.ctx.currentTime;
 
     if (this.isActive) {
-      this.droneGain.gain.cancelScheduledValues(now);
-      this.droneGain.gain.linearRampToValueAtTime(0.22, now + 1.2);
-      this.windGain.gain.cancelScheduledValues(now);
-      this.windGain.gain.linearRampToValueAtTime(0.06, now + 1.5);
+      if (this.isLoaded) {
+        this.startAmbientLoops();
+      }
+      this.masterGain.gain.cancelScheduledValues(now);
+      this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, now);
+      this.masterGain.gain.linearRampToValueAtTime(0.75, now + 1.2);
     } else {
-      this.droneGain.gain.cancelScheduledValues(now);
-      this.droneGain.gain.linearRampToValueAtTime(0.0001, now + 0.8);
-      this.windGain.gain.cancelScheduledValues(now);
-      this.windGain.gain.linearRampToValueAtTime(0.0001, now + 0.8);
+      this.masterGain.gain.cancelScheduledValues(now);
+      this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, now);
+      this.masterGain.gain.linearRampToValueAtTime(0.0001, now + 0.8);
     }
 
     return this.isActive;
@@ -107,107 +157,89 @@ export class SoundDesign {
 
   updateScroll(progress, velocity = 0) {
     if (!this.isActive || !this.ctx) return;
+    // Subtly modulate volume based on freefall speed
+    const speedBoost = Math.min(0.2, Math.abs(velocity) * 0.15);
     const now = this.ctx.currentTime;
+    if (this.masterGain) {
+      this.masterGain.gain.setTargetAtTime(0.70 + speedBoost, now, 0.1);
+    }
+  }
 
-    const targetFreq = 100 + Math.pow(progress, 1.8) * 850 + Math.abs(velocity) * 350;
-    this.filter.frequency.setTargetAtTime(targetFreq, now, 0.1);
+  updateTruth(truth) {
+    this.truth = truth;
+    if (!this.ctx || !this.gains.descent || !this.gains.ascent) return;
 
-    const targetWindGain = Math.min(0.16, 0.04 + Math.abs(velocity) * 0.1);
-    this.windGain.gain.setTargetAtTime(targetWindGain, now, 0.1);
+    const now = this.ctx.currentTime;
+    // Crossfade between ambient descent and ambient ascent
+    const descentVol = Math.max(0.0001, (1.0 - truth) * 0.75);
+    const ascentVol = Math.max(0.0001, truth * 0.85);
+
+    this.gains.descent.gain.cancelScheduledValues(now);
+    this.gains.descent.gain.setValueAtTime(this.gains.descent.gain.value, now);
+    this.gains.descent.gain.linearRampToValueAtTime(descentVol, now + 1.2);
+
+    this.gains.ascent.gain.cancelScheduledValues(now);
+    this.gains.ascent.gain.setValueAtTime(this.gains.ascent.gain.value, now);
+    this.gains.ascent.gain.linearRampToValueAtTime(ascentVol, now + 1.2);
+  }
+
+  playOneShot(buffer, volume = 0.85) {
+    if (!this.isActive || !this.ctx || !buffer) return;
+
+    const source = this.ctx.createBufferSource();
+    const gain = this.ctx.createGain();
+
+    source.buffer = buffer;
+    gain.gain.setValueAtTime(volume, this.ctx.currentTime);
+
+    source.connect(gain);
+    gain.connect(this.gains.sfx || this.masterGain);
+
+    source.start(0);
   }
 
   playStoneCrack() {
     if (!this.isActive || !this.ctx) return;
     const now = this.ctx.currentTime;
-    if (now - this.lastCrackTime < 0.4) return;
+    if (now - this.lastCrackTime < 0.28) return;
     this.lastCrackTime = now;
 
-    // Concrete snap & crunch (lowpass noise burst)
-    const bufferSize = this.ctx.sampleRate * 0.35;
-    const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-    const output = noiseBuffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      output[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.2));
+    if (this.buffers.stoneShatter) {
+      this.playOneShot(this.buffers.stoneShatter, 0.75);
     }
-
-    const noise = this.ctx.createBufferSource();
-    noise.buffer = noiseBuffer;
-
-    const filter = this.ctx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(260, now);
-    filter.frequency.exponentialRampToValueAtTime(60, now + 0.35);
-
-    const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(0.3, now);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
-
-    noise.connect(filter);
-    filter.connect(gain);
-    gain.connect(this.ctx.destination);
-    noise.start(now);
-
-    // Deep sub thump
-    const subOsc = this.ctx.createOscillator();
-    const subGain = this.ctx.createGain();
-    subOsc.type = 'sine';
-    subOsc.frequency.setValueAtTime(95, now);
-    subOsc.frequency.exponentialRampToValueAtTime(32, now + 0.28);
-    subGain.gain.setValueAtTime(0.35, now);
-    subGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
-
-    subOsc.connect(subGain);
-    subGain.connect(this.ctx.destination);
-    subOsc.start(now);
-    subOsc.stop(now + 0.3);
   }
 
   playImpact() {
     if (!this.isActive || !this.ctx) return;
-    const now = this.ctx.currentTime;
-
-    const subOsc = this.ctx.createOscillator();
-    const subGain = this.ctx.createGain();
-    subOsc.type = 'sine';
-    subOsc.frequency.setValueAtTime(140, now);
-    subOsc.frequency.exponentialRampToValueAtTime(28, now + 1.2);
-
-    subGain.gain.setValueAtTime(0.45, now);
-    subGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.4);
-
-    subOsc.connect(subGain);
-    subGain.connect(this.ctx.destination);
-    subOsc.start(now);
-    subOsc.stop(now + 1.4);
-
-    this.playChime(1174.66, 0.15, 1.8);
+    if (this.buffers.bedrockImpact) {
+      this.playOneShot(this.buffers.bedrockImpact, 0.95);
+    }
   }
 
-  playChime(freq = 528, volume = 0.15, duration = 2.5) {
+  playAscentChord() {
+    if (!this.isActive || !this.ctx) return;
+    if (this.buffers.wingsIgnite) {
+      this.playOneShot(this.buffers.wingsIgnite, 0.9);
+    }
+  }
+
+  playChime(freq = 528, volume = 0.15, duration = 2.0) {
+    // Elegant fallback / auxiliary chime
     if (!this.isActive || !this.ctx) return;
     const now = this.ctx.currentTime;
-
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    osc.type = 'triangle';
+
+    osc.type = 'sine';
     osc.frequency.setValueAtTime(freq, now);
 
     gain.gain.setValueAtTime(volume, now);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
 
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.masterGain);
+
     osc.start(now);
     osc.stop(now + duration);
-  }
-
-  playAscentChord() {
-    if (!this.isActive || !this.ctx) return;
-    const chord = [369.99, 466.16, 554.37, 698.46, 830.61];
-    chord.forEach((freq, idx) => {
-      setTimeout(() => {
-        this.playChime(freq, 0.12, 3.0);
-      }, idx * 160);
-    });
   }
 }
