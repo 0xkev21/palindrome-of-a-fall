@@ -14,9 +14,9 @@ import * as THREE from 'three';
 
 export class ParticleImageEngine {
   constructor() {
-    this.gridX = 280;
-    this.gridY = 160;
-    this.particleCount = this.gridX * this.gridY; // 44,800 points
+    this.gridX = 320;
+    this.gridY = 180;
+    this.particleCount = this.gridX * this.gridY; // 57,600 stardust points (exact 16:9 grid)
 
     this.scenes = [
       {
@@ -208,9 +208,23 @@ export class ParticleImageEngine {
       varying float vAlpha;
 
       void main() {
+        // Responsive Cover Sampling: preserves the exact 16:9 cinematic aspect ratio without stretching on mobile
+        float screenAspect = uResolution.x / uResolution.y;
+        float texAspect = 16.0 / 9.0;
+        vec2 sampleUv = aUv;
+        if (screenAspect < texAspect) {
+          // Portrait mobile screens: zoom X from center so image remains undistorted
+          float scale = screenAspect / texAspect;
+          sampleUv.x = (aUv.x - 0.5) * scale + 0.5;
+        } else if (screenAspect > texAspect) {
+          // Ultra-wide screens: zoom Y from center
+          float scale = texAspect / screenAspect;
+          sampleUv.y = (aUv.y - 0.5) * scale + 0.5;
+        }
+
         // Sample texture colors
-        vec4 colCurr = texture2D(uTexCurrent, aUv);
-        vec4 colNext = texture2D(uTexNext, aUv);
+        vec4 colCurr = texture2D(uTexCurrent, sampleUv);
+        vec4 colNext = texture2D(uTexNext, sampleUv);
         vec4 col = mix(colCurr, colNext, uTransition);
 
         // Luminance
@@ -236,13 +250,17 @@ export class ParticleImageEngine {
         // 2. Vertical Slipstream Velocity Stretch
         pos.y += uScrollVelocity * (0.12 + aSeed * 0.08);
 
-        // 3. Interactive Mouse Dispersion (Particles scatter under cursor & spring back)
+        // 3. Expansive Interactive Pointer Dispersion (Adapts radius to mobile/desktop screens)
         vec2 mouseDist = pos.xy - uMouse;
         float d = length(mouseDist);
-        if (d < 140.0 && d > 0.0) {
-          float push = (1.0 - d / 140.0) * 32.0 * uMotion;
+        float disperseRadius = min(320.0, max(160.0, uResolution.x * 0.42));
+        if (d < disperseRadius && d > 0.0) {
+          float normD = d / disperseRadius;
+          // Smooth organic cubic falloff for fluid stardust dispersal
+          float pushFactor = (1.0 - normD) * (1.0 - normD);
+          float push = pushFactor * min(70.0, uResolution.x * 0.15) * uMotion;
           pos.xy += (mouseDist / d) * push;
-          pos.z += push * 1.5;
+          pos.z += push * 2.0;
         }
 
         // 4. Subtle Chapter Shift Dispersal
@@ -255,11 +273,13 @@ export class ParticleImageEngine {
         vec2 clip = norm * 2.0 - 1.0;
         gl_Position = vec4(clip.x, clip.y, pos.z * 0.001, 1.0);
 
-        // 5. Crisp, Delicate Particle Size (2.2px to 4.2px circles - NOT mosaic blocks!)
-        gl_PointSize = 2.2 + lum * 2.2 + aSeed * 0.6;
+        // 5. Fine, Delicate Stardust Particle Sizing (1.8px to 4.6px - crisp, starry, NOT chunky blobs)
+        gl_PointSize = 1.8 + lum * 2.5 + aSeed * 0.7;
 
-        // Alpha calculation
-        vAlpha = (0.28 + lum * 0.72) * (1.0 - scatterAmount * 0.35);
+        // Alpha calculation: Clean thresholding allows dark negative space to dissolve,
+        // while luminous architectural & celestial features glow with fine stardust clarity
+        float lumFactor = smoothstep(0.04, 0.35, lum);
+        vAlpha = lumFactor * (0.45 + lum * 0.55) * (1.0 - scatterAmount * 0.4);
       }
     `;
 
@@ -269,14 +289,14 @@ export class ParticleImageEngine {
       uniform float uGlobalAlpha;
 
       void main() {
-        // Soft Anti-Aliased Circular Particle (No ugly square blocks!)
+        // Delicate, Anti-Aliased Circular Stardust Particle
         vec2 coord = gl_PointCoord - vec2(0.5);
         float dist = length(coord);
         if (dist > 0.5) discard;
 
-        // Soft radial glowing edge for atmospheric stardust feel
-        float edgeStrength = 1.0 - smoothstep(0.32, 0.5, dist);
-        gl_FragColor = vec4(vColor, vAlpha * uGlobalAlpha * edgeStrength);
+        // Crisp, soft anti-aliased edge (clean stardust shimmer)
+        float edge = 1.0 - smoothstep(0.32, 0.5, dist);
+        gl_FragColor = vec4(vColor, vAlpha * uGlobalAlpha * edge);
       }
     `;
 

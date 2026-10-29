@@ -60,6 +60,18 @@
       overflow: hidden;
     }
 
+    /* Hide native browser scrollbar across all engines while preserving full scrollability */
+    html, body {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
+    }
+
     html {
       width: 100%;
       min-height: 100%;
@@ -124,6 +136,7 @@
       position: relative;
       overflow: hidden;
       border-radius: 99px;
+      transition: opacity 0.4s ease;
     }
     .loader-fill {
       position: absolute;
@@ -133,6 +146,58 @@
       width: 0%;
       background: linear-gradient(90deg, #93a5cf, #ffffff);
       transition: width 0.12s ease-out;
+    }
+    .loader-enter {
+      margin-top: 1.8rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+    }
+    .loader-enter.ready {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    .loader-enter-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(251, 191, 36, 0.55);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      padding: 0.75rem 2.2rem;
+      border-radius: 999px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 0 25px rgba(251, 191, 36, 0.25);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .loader-enter-btn:hover {
+      background: rgba(251, 191, 36, 0.22);
+      border-color: var(--truth-gold);
+      color: #fef08a;
+      box-shadow: 0 0 35px rgba(251, 191, 36, 0.55);
+      transform: translateY(-2px);
+    }
+    .enter-icon {
+      font-size: 0.7rem;
+      color: var(--truth-gold);
+    }
+    .enter-sub {
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.25em;
+      color: rgba(255, 255, 255, 0.4);
+      text-transform: uppercase;
     }
 
     /* Custom Kinetic Cursor */
@@ -246,20 +311,28 @@
       pointer-events: auto;
     }
     .soaring-wings .wing-left {
-      transform-origin: 250px 150px;
-      animation: flapWingLeft 2.4s infinite ease-in-out;
+      transform-origin: 254px 125px;
+      animation: flapWingLeft 3.6s infinite ease-in-out;
     }
     .soaring-wings .wing-right {
-      transform-origin: 290px 150px;
-      animation: flapWingRight 2.4s infinite ease-in-out;
+      transform-origin: 286px 125px;
+      animation: flapWingRight 3.6s infinite ease-in-out;
     }
     @keyframes flapWingLeft {
       0%, 100% { transform: rotate(0deg) scale(1); }
-      50% { transform: rotate(5deg) scale(1.05); }
+      45% { transform: rotate(-3.5deg) scale(1.025, 1.015); }
     }
     @keyframes flapWingRight {
       0%, 100% { transform: rotate(0deg) scale(1); }
-      50% { transform: rotate(-5deg) scale(1.05); }
+      45% { transform: rotate(3.5deg) scale(1.025, 1.015); }
+    }
+    .celestial-feather-motes {
+      animation: featherMoteGlow 3s infinite alternate ease-in-out;
+      transform-origin: center;
+    }
+    @keyframes featherMoteGlow {
+      0% { opacity: 0.45; transform: translateY(0px) scale(0.92); }
+      100% { opacity: 0.95; transform: translateY(-4px) scale(1.08); }
     }
 
     /* High Fashion Editorial HUD */
@@ -706,21 +779,100 @@
       }
     }
 
+    /* Touch device rules: hide fake desktop kinetic cursor */
+    @media (hover: none) and (pointer: coarse) {
+      .cursor-dot, .cursor-ring {
+        display: none !important;
+      }
+      body {
+        cursor: auto !important;
+      }
+    }
+
     /* Responsive adjustments */
     @media (max-width: 768px) {
       .hud {
-        top: 1.2rem;
-        left: 1.2rem;
-        right: 1.2rem;
+        top: 1rem;
+        left: 1rem;
+        right: 1rem;
+      }
+      .hud-title {
+        font-size: 0.72rem;
+        letter-spacing: 0.18em;
+      }
+      .hud-badge {
+        font-size: 0.58rem;
+        letter-spacing: 0.12em;
       }
       .hud-center {
         display: none;
       }
-      .editorial-card {
-        padding: 3rem 1.75rem;
+      .hud-right {
+        gap: 0.45rem;
+      }
+      .hud-status-pill {
+        padding: 0.35rem 0.7rem;
+        font-size: 0.58rem;
+        letter-spacing: 0.08em;
+      }
+      .hud-btn {
+        padding: 0.35rem 0.7rem;
+        font-size: 0.58rem;
+        letter-spacing: 0.08em;
+      }
+      .character-container {
+        width: clamp(210px, 62vw, 300px);
       }
       .altimeter-nav {
         display: none;
+      }
+      .ascent-hint-dock {
+        bottom: max(1.8rem, calc(1.2rem + env(safe-area-inset-bottom, 0px)));
+      }
+      .ascent-hint-pill {
+        padding: 0.45rem 1.1rem;
+        gap: 0.5rem;
+      }
+      .ascent-hint-label {
+        font-size: 0.62rem;
+        letter-spacing: 0.15em;
+      }
+      .ascent-hint-sub {
+        font-size: 0.52rem;
+      }
+      .replay-dock {
+        bottom: max(1.8rem, calc(1.2rem + env(safe-area-inset-bottom, 0px)));
+      }
+      .replay-btn {
+        padding: 0.5rem 1.3rem;
+        font-size: 0.65rem;
+        letter-spacing: 0.16em;
+      }
+      .replay-sub {
+        font-size: 0.52rem;
+      }
+      .loader-brand {
+        font-size: 1.15rem;
+        letter-spacing: 0.28em;
+      }
+      .loader-enter-btn {
+        padding: 0.65rem 1.6rem;
+        font-size: 0.68rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .hud-title {
+        display: none;
+      }
+      .hud-left {
+        max-width: 140px;
+      }
+      .hud-badge {
+        font-size: 0.52rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
     }
   </style>
@@ -729,12 +881,19 @@
 
 
 
-  <!-- Preloader -->
+  <!-- Preloader & Audio Activation Gate -->
   <div id="preloader">
     <div class="loader-brand">Palindrome of a Fall</div>
-    <div class="loader-sub">Synthesizing Visual Narrative & Sound</div>
-    <div class="loader-track">
+    <div class="loader-sub" id="loader-sub">Synthesizing Visual Narrative & Sound</div>
+    <div class="loader-track" id="loader-track">
       <div class="loader-fill" id="loader-fill"></div>
+    </div>
+    <div class="loader-enter" id="loader-enter">
+      <button class="loader-enter-btn interactive" id="loader-enter-btn">
+        <span class="enter-icon">▲</span>
+        <span class="enter-text">ENTER EXPERIENCE</span>
+      </button>
+      <span class="enter-sub">CLICK ANYWHERE // SOUND DESIGNED</span>
     </div>
   </div>
 
@@ -767,13 +926,13 @@
         <span id="invert-icon">↕</span> <span id="invert-label">AXIS // NORMAL</span>
       </div>
 
-      <button class="hud-btn interactive" id="audio-toggle-btn" title="Toggle Cinematic Soundscape">
+      <button class="hud-btn interactive audio-active" id="audio-toggle-btn" title="Toggle Cinematic Soundscape">
         <span class="sound-bars" id="sound-indicator">
           <span class="sound-bar"></span>
           <span class="sound-bar"></span>
           <span class="sound-bar"></span>
         </span>
-        <span id="audio-btn-label">SOUND: OFF</span>
+        <span id="audio-btn-label">SOUND: ON</span>
       </button>
     </div>
   </header>

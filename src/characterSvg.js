@@ -97,19 +97,47 @@ export function getCharacterSvgMarkup() {
     <!-- ========================================== -->
     <svg id="hero-svg-ascent" viewBox="0 0 540 460" class="hero-character-svg hero-ascent" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <!-- Radiant Golden Wings Gradients -->
-        <linearGradient id="ascWingGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                <!-- Radiant Celestial Golden Wings Gradients -->
+        <linearGradient id="ascWingGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stop-color="#ffffff"/>
-          <stop offset="25%" stop-color="#fef08a"/>
-          <stop offset="65%" stop-color="#fbbf24"/>
+          <stop offset="18%" stop-color="#fffbeb"/>
+          <stop offset="45%" stop-color="#fef08a"/>
+          <stop offset="75%" stop-color="#fbbf24"/>
           <stop offset="100%" stop-color="#f59e0b"/>
+        </linearGradient>
+
+        <linearGradient id="ascWingGrad2" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#fffef0"/>
+          <stop offset="28%" stop-color="#fde047"/>
+          <stop offset="68%" stop-color="#f59e0b"/>
+          <stop offset="100%" stop-color="#d97706"/>
         </linearGradient>
 
         <linearGradient id="ascWingInner" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
-          <stop offset="45%" stop-color="#fef08a" stop-opacity="0.65"/>
-          <stop offset="100%" stop-color="#fbbf24" stop-opacity="0.12"/>
+          <stop offset="35%" stop-color="#fef08a" stop-opacity="0.85"/>
+          <stop offset="75%" stop-color="#fbbf24" stop-opacity="0.65"/>
+          <stop offset="100%" stop-color="#d97706" stop-opacity="0.45"/>
         </linearGradient>
+
+        <linearGradient id="ascWingCovert" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="30%" stop-color="#fef08a"/>
+          <stop offset="70%" stop-color="#fbbf24"/>
+          <stop offset="100%" stop-color="#f59e0b"/>
+        </linearGradient>
+
+        <linearGradient id="ascQuillGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+          <stop offset="50%" stop-color="#fef9c3" stop-opacity="0.85"/>
+          <stop offset="100%" stop-color="#fbbf24" stop-opacity="0.25"/>
+        </linearGradient>
+
+        <radialGradient id="ascWingAura" cx="50%" cy="40%" r="55%">
+          <stop offset="0%" stop-color="#fef08a" stop-opacity="0.55"/>
+          <stop offset="60%" stop-color="#fbbf24" stop-opacity="0.25"/>
+          <stop offset="100%" stop-color="#f59e0b" stop-opacity="0"/>
+        </radialGradient>
 
         <!-- Matching Anime Boy Palettes -->
         <linearGradient id="ascShirtGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -146,30 +174,98 @@ export function getCharacterSvgMarkup() {
         </linearGradient>
       </defs>
 
-      <!-- A. MAJESTIC RADIANT FEATHERED WINGS (Erupting from back) -->
+            <!-- A. MAJESTIC CELESTIAL RADIANT WINGS (Arching soaring seraphic plumage) -->
       <g id="soaring-wings" class="soaring-wings">
-        <!-- Left Wing -->
         <g class="wing-left">
-          <!-- Back Primary Wing Arc -->
-          <path d="M 245 155 C 185 95, 110 45, 18 65 C 80 125, 160 178, 240 185 Z" fill="url(#ascWingInner)"/>
-          <!-- Tier 1 Large Feather Sweep -->
-          <path d="M 240 160 C 175 90, 85 70, 8 100 C 72 150, 162 192, 235 195 Z" fill="url(#ascWingGrad)" stroke="#ffffff" stroke-width="1.8"/>
-          <!-- Tier 2 Mid Feather Sweep -->
-          <path d="M 235 168 C 170 118, 92 112, 28 152 C 88 185, 168 208, 230 205 Z" fill="url(#ascWingGrad)" stroke="#ffffff" stroke-width="1.5"/>
-          <!-- Tier 3 Lower Feather -->
-          <path d="M 230 176 C 175 142, 112 152, 62 202 C 118 222, 182 225, 226 215 Z" fill="url(#ascWingGrad)" stroke="#ffffff" stroke-width="1.2"/>
+          <!-- Ambient Solar Glow Aura -->
+          <path d="M 255 130 C 220 50, 145 10, 80 18 C 30 24, 2 58, 5 95 C 6 138, 20 185, 60 238 C 110 230, 175 205, 235 165 Z" fill="url(#ascWingAura)"/>
+
+          <!-- Tier 1: Primary Flight Feathers (Sweeping seraphic blades) -->
+          <path d="M 256 122 C 230 68, 178 12, 124 14 C 98 15, 70 24, 58 32 C 68 44, 108 55, 168 76 C 215 92, 246 112, 256 122 Z" fill="url(#ascWingGrad1)" stroke="rgba(255,255,255,0.65)" stroke-width="0.8"/>
+          <path d="M 254 125 C 218 72, 142 32, 86 38 C 58 42, 36 52, 28 62 C 42 74, 94 86, 165 102 C 218 114, 248 120, 254 125 Z" fill="url(#ascWingGrad1)" stroke="rgba(255,255,255,0.6)" stroke-width="0.8"/>
+          <path d="M 252 128 C 204 82, 120 54, 58 70 C 32 78, 14 90, 10 100 C 26 110, 80 116, 158 120 C 214 122, 246 125, 252 128 Z" fill="url(#ascWingGrad1)" stroke="rgba(255,255,255,0.55)" stroke-width="0.75"/>
+          <path d="M 250 132 C 190 95, 105 84, 46 106 C 24 116, 10 130, 12 140 C 30 146, 82 142, 152 136 C 210 130, 244 129, 250 132 Z" fill="url(#ascWingGrad2)" stroke="rgba(255,255,255,0.5)" stroke-width="0.75"/>
+          <path d="M 248 136 C 182 110, 102 115, 48 144 C 30 156, 22 170, 28 178 C 46 180, 95 168, 156 154 C 210 142, 242 136, 248 136 Z" fill="url(#ascWingGrad2)" stroke="rgba(255,255,255,0.45)" stroke-width="0.7"/>
+          <path d="M 246 140 C 178 125, 110 146, 62 180 C 46 194, 44 206, 54 212 C 72 210, 115 190, 164 172 C 212 154, 240 142, 246 140 Z" fill="url(#ascWingGrad2)" stroke="rgba(255,255,255,0.4)" stroke-width="0.7"/>
+          <path d="M 244 144 C 180 140, 125 172, 84 210 C 72 224, 74 234, 86 238 C 104 232, 138 210, 176 190 C 216 168, 238 148, 244 144 Z" fill="url(#ascWingGrad2)" stroke="rgba(255,255,255,0.4)" stroke-width="0.65"/>
+          <path d="M 242 148 C 186 155, 142 195, 112 232 C 102 244, 108 252, 120 252 C 136 244, 162 222, 192 202 C 220 180, 236 156, 242 148 Z" fill="url(#ascWingGrad2)" stroke="rgba(255,255,255,0.35)" stroke-width="0.6"/>
+
+          <!-- Tier 2: Secondary Feathers (Inner plumage depth) -->
+          <path d="M 252 124 C 215 75, 152 44, 102 54 C 85 58, 70 70, 78 78 C 96 84, 142 94, 196 106 C 230 114, 248 120, 252 124 Z" fill="url(#ascWingInner)" stroke="rgba(255,255,255,0.45)" stroke-width="0.7"/>
+          <path d="M 250 128 C 196 84, 134 68, 86 88 C 72 96, 62 108, 70 116 C 90 120, 136 122, 188 124 C 226 125, 246 126, 250 128 Z" fill="url(#ascWingInner)" stroke="rgba(255,255,255,0.45)" stroke-width="0.7"/>
+          <path d="M 248 132 C 182 98, 122 98, 78 122 C 65 132, 60 144, 70 150 C 88 152, 132 146, 182 140 C 222 136, 244 133, 248 132 Z" fill="url(#ascWingInner)" stroke="rgba(255,255,255,0.45)" stroke-width="0.7"/>
+          <path d="M 246 136 C 174 114, 118 128, 82 158 C 72 168, 70 180, 82 184 C 100 184, 138 172, 184 160 C 220 148, 242 140, 246 136 Z" fill="url(#ascWingInner)" stroke="rgba(255,255,255,0.45)" stroke-width="0.7"/>
+          <path d="M 244 140 C 172 130, 124 156, 96 192 C 86 204, 88 214, 100 216 C 118 212, 150 194, 190 178 C 220 162, 240 146, 244 140 Z" fill="url(#ascWingInner)" stroke="rgba(255,255,255,0.45)" stroke-width="0.7"/>
+          <path d="M 242 144 C 175 145, 136 182, 114 218 C 106 228, 112 236, 124 236 C 140 230, 166 210, 198 192 C 224 174, 238 152, 242 144 Z" fill="url(#ascWingInner)" stroke="rgba(255,255,255,0.45)" stroke-width="0.7"/>
+
+          <!-- Tier 3: Coverts & Scapular Mantle (Soft upper crest & shoulder down) -->
+          <path d="M 254 122 C 228 82, 178 54, 132 66 C 114 70, 106 82, 116 88 C 140 92, 185 98, 228 110 C 245 115, 252 119, 254 122 Z" fill="url(#ascWingCovert)" stroke="rgba(255,255,255,0.5)" stroke-width="0.75"/>
+          <path d="M 250 126 C 205 92, 158 80, 120 100 C 106 108, 102 118, 112 122 C 136 124, 178 120, 222 120 C 240 122, 248 124, 250 126 Z" fill="url(#ascWingCovert)" stroke="rgba(255,255,255,0.5)" stroke-width="0.75"/>
+          <path d="M 246 130 C 190 106, 144 108, 112 132 C 102 140, 102 150, 114 152 C 136 150, 176 140, 216 134 C 236 131, 244 129, 246 130 Z" fill="url(#ascWingCovert)" stroke="rgba(255,255,255,0.5)" stroke-width="0.75"/>
+          <path d="M 242 134 C 180 120, 138 134, 116 162 C 108 170, 112 178, 124 178 C 144 174, 180 158, 216 146 C 234 140, 240 135, 242 134 Z" fill="url(#ascWingCovert)" stroke="rgba(255,255,255,0.5)" stroke-width="0.75"/>
+          <path d="M 256 120 C 238 98, 204 88, 172 98 C 160 102, 156 110, 166 114 C 190 116, 222 118, 250 121 Z" fill="url(#ascWingCovert)" stroke="rgba(255,255,255,0.5)" stroke-width="0.75"/>
+          <path d="M 255 123 C 230 110, 190 108, 160 124 C 150 130, 150 138, 162 140 C 188 136, 220 130, 250 126 Z" fill="url(#ascWingCovert)" stroke="rgba(255,255,255,0.5)" stroke-width="0.75"/>
+
+          <!-- Radiant Celestial Quill Spines -->
+          <path d="M 254 122 C 212 70, 142 22, 60 32" stroke="url(#ascQuillGrad)" stroke-width="1.40" stroke-linecap="round" fill="none"/>
+          <path d="M 252 125 C 195 76, 118 48, 30 62" stroke="url(#ascQuillGrad)" stroke-width="1.32" stroke-linecap="round" fill="none"/>
+          <path d="M 250 128 C 178 90, 98 75, 12 100" stroke="url(#ascQuillGrad)" stroke-width="1.24" stroke-linecap="round" fill="none"/>
+          <path d="M 248 132 C 168 104, 88 108, 14 140" stroke="url(#ascQuillGrad)" stroke-width="1.16" stroke-linecap="round" fill="none"/>
+          <path d="M 246 136 C 160 120, 88 135, 30 178" stroke="url(#ascQuillGrad)" stroke-width="1.08" stroke-linecap="round" fill="none"/>
+          <path d="M 244 140 C 160 135, 100 162, 56 212" stroke="url(#ascQuillGrad)" stroke-width="1.00" stroke-linecap="round" fill="none"/>
+          <path d="M 242 144 C 162 152, 115 190, 88 238" stroke="url(#ascQuillGrad)" stroke-width="0.92" stroke-linecap="round" fill="none"/>
+          <path d="M 240 148 C 165 168, 130 215, 122 252" stroke="url(#ascQuillGrad)" stroke-width="0.84" stroke-linecap="round" fill="none"/>
         </g>
 
-        <!-- Right Wing -->
         <g class="wing-right">
-          <!-- Back Primary Wing Arc -->
-          <path d="M 285 155 C 345 95, 420 45, 512 65 C 450 125, 370 178, 290 185 Z" fill="url(#ascWingInner)"/>
-          <!-- Tier 1 Large Feather Sweep -->
-          <path d="M 290 160 C 355 90, 445 70, 522 100 C 458 150, 368 192, 295 195 Z" fill="url(#ascWingGrad)" stroke="#ffffff" stroke-width="1.8"/>
-          <!-- Tier 2 Mid Feather Sweep -->
-          <path d="M 295 168 C 360 118, 438 112, 502 152 C 442 185, 362 208, 300 205 Z" fill="url(#ascWingGrad)" stroke="#ffffff" stroke-width="1.5"/>
-          <!-- Tier 3 Lower Feather -->
-          <path d="M 300 176 C 355 142, 418 152, 468 202 C 412 222, 348 225, 304 215 Z" fill="url(#ascWingGrad)" stroke="#ffffff" stroke-width="1.2"/>
+          <!-- Ambient Solar Glow Aura -->
+          <path d="M 285.0 130 C 320.0 50, 395.0 10, 460.0 18 C 510.0 24, 538.0 58, 535.0 95 C 534.0 138, 520.0 185, 480.0 238 C 430.0 230, 365.0 205, 305.0 165 Z" fill="url(#ascWingAura)"/>
+
+          <!-- Tier 1: Primary Flight Feathers (Sweeping seraphic blades) -->
+          <path d="M 284.0 122 C 310.0 68, 362.0 12, 416.0 14 C 442.0 15, 470.0 24, 482.0 32 C 472.0 44, 432.0 55, 372.0 76 C 325.0 92, 294.0 112, 284.0 122 Z" fill="url(#ascWingGrad1)" stroke="rgba(255,255,255,0.65)" stroke-width="0.8"/>
+          <path d="M 286.0 125 C 322.0 72, 398.0 32, 454.0 38 C 482.0 42, 504.0 52, 512.0 62 C 498.0 74, 446.0 86, 375.0 102 C 322.0 114, 292.0 120, 286.0 125 Z" fill="url(#ascWingGrad1)" stroke="rgba(255,255,255,0.6)" stroke-width="0.8"/>
+          <path d="M 288.0 128 C 336.0 82, 420.0 54, 482.0 70 C 508.0 78, 526.0 90, 530.0 100 C 514.0 110, 460.0 116, 382.0 120 C 326.0 122, 294.0 125, 288.0 128 Z" fill="url(#ascWingGrad1)" stroke="rgba(255,255,255,0.55)" stroke-width="0.75"/>
+          <path d="M 290.0 132 C 350.0 95, 435.0 84, 494.0 106 C 516.0 116, 530.0 130, 528.0 140 C 510.0 146, 458.0 142, 388.0 136 C 330.0 130, 296.0 129, 290.0 132 Z" fill="url(#ascWingGrad2)" stroke="rgba(255,255,255,0.5)" stroke-width="0.75"/>
+          <path d="M 292.0 136 C 358.0 110, 438.0 115, 492.0 144 C 510.0 156, 518.0 170, 512.0 178 C 494.0 180, 445.0 168, 384.0 154 C 330.0 142, 298.0 136, 292.0 136 Z" fill="url(#ascWingGrad2)" stroke="rgba(255,255,255,0.45)" stroke-width="0.7"/>
+          <path d="M 294.0 140 C 362.0 125, 430.0 146, 478.0 180 C 494.0 194, 496.0 206, 486.0 212 C 468.0 210, 425.0 190, 376.0 172 C 328.0 154, 300.0 142, 294.0 140 Z" fill="url(#ascWingGrad2)" stroke="rgba(255,255,255,0.4)" stroke-width="0.7"/>
+          <path d="M 296.0 144 C 360.0 140, 415.0 172, 456.0 210 C 468.0 224, 466.0 234, 454.0 238 C 436.0 232, 402.0 210, 364.0 190 C 324.0 168, 302.0 148, 296.0 144 Z" fill="url(#ascWingGrad2)" stroke="rgba(255,255,255,0.4)" stroke-width="0.65"/>
+          <path d="M 298.0 148 C 354.0 155, 398.0 195, 428.0 232 C 438.0 244, 432.0 252, 420.0 252 C 404.0 244, 378.0 222, 348.0 202 C 320.0 180, 304.0 156, 298.0 148 Z" fill="url(#ascWingGrad2)" stroke="rgba(255,255,255,0.35)" stroke-width="0.6"/>
+
+          <!-- Tier 2: Secondary Feathers (Inner plumage depth) -->
+          <path d="M 288.0 124 C 325.0 75, 388.0 44, 438.0 54 C 455.0 58, 470.0 70, 462.0 78 C 444.0 84, 398.0 94, 344.0 106 C 310.0 114, 292.0 120, 288.0 124 Z" fill="url(#ascWingInner)" stroke="rgba(255,255,255,0.45)" stroke-width="0.7"/>
+          <path d="M 290.0 128 C 344.0 84, 406.0 68, 454.0 88 C 468.0 96, 478.0 108, 470.0 116 C 450.0 120, 404.0 122, 352.0 124 C 314.0 125, 294.0 126, 290.0 128 Z" fill="url(#ascWingInner)" stroke="rgba(255,255,255,0.45)" stroke-width="0.7"/>
+          <path d="M 292.0 132 C 358.0 98, 418.0 98, 462.0 122 C 475.0 132, 480.0 144, 470.0 150 C 452.0 152, 408.0 146, 358.0 140 C 318.0 136, 296.0 133, 292.0 132 Z" fill="url(#ascWingInner)" stroke="rgba(255,255,255,0.45)" stroke-width="0.7"/>
+          <path d="M 294.0 136 C 366.0 114, 422.0 128, 458.0 158 C 468.0 168, 470.0 180, 458.0 184 C 440.0 184, 402.0 172, 356.0 160 C 320.0 148, 298.0 140, 294.0 136 Z" fill="url(#ascWingInner)" stroke="rgba(255,255,255,0.45)" stroke-width="0.7"/>
+          <path d="M 296.0 140 C 368.0 130, 416.0 156, 444.0 192 C 454.0 204, 452.0 214, 440.0 216 C 422.0 212, 390.0 194, 350.0 178 C 320.0 162, 300.0 146, 296.0 140 Z" fill="url(#ascWingInner)" stroke="rgba(255,255,255,0.45)" stroke-width="0.7"/>
+          <path d="M 298.0 144 C 365.0 145, 404.0 182, 426.0 218 C 434.0 228, 428.0 236, 416.0 236 C 400.0 230, 374.0 210, 342.0 192 C 316.0 174, 302.0 152, 298.0 144 Z" fill="url(#ascWingInner)" stroke="rgba(255,255,255,0.45)" stroke-width="0.7"/>
+
+          <!-- Tier 3: Coverts & Scapular Mantle (Soft upper crest & shoulder down) -->
+          <path d="M 286.0 122 C 312.0 82, 362.0 54, 408.0 66 C 426.0 70, 434.0 82, 424.0 88 C 400.0 92, 355.0 98, 312.0 110 C 295.0 115, 288.0 119, 286.0 122 Z" fill="url(#ascWingCovert)" stroke="rgba(255,255,255,0.5)" stroke-width="0.75"/>
+          <path d="M 290.0 126 C 335.0 92, 382.0 80, 420.0 100 C 434.0 108, 438.0 118, 428.0 122 C 404.0 124, 362.0 120, 318.0 120 C 300.0 122, 292.0 124, 290.0 126 Z" fill="url(#ascWingCovert)" stroke="rgba(255,255,255,0.5)" stroke-width="0.75"/>
+          <path d="M 294.0 130 C 350.0 106, 396.0 108, 428.0 132 C 438.0 140, 438.0 150, 426.0 152 C 404.0 150, 364.0 140, 324.0 134 C 304.0 131, 296.0 129, 294.0 130 Z" fill="url(#ascWingCovert)" stroke="rgba(255,255,255,0.5)" stroke-width="0.75"/>
+          <path d="M 298.0 134 C 360.0 120, 402.0 134, 424.0 162 C 432.0 170, 428.0 178, 416.0 178 C 396.0 174, 360.0 158, 324.0 146 C 306.0 140, 300.0 135, 298.0 134 Z" fill="url(#ascWingCovert)" stroke="rgba(255,255,255,0.5)" stroke-width="0.75"/>
+          <path d="M 284.0 120 C 302.0 98, 336.0 88, 368.0 98 C 380.0 102, 384.0 110, 374.0 114 C 350.0 116, 318.0 118, 290.0 121 Z" fill="url(#ascWingCovert)" stroke="rgba(255,255,255,0.5)" stroke-width="0.75"/>
+          <path d="M 285.0 123 C 310.0 110, 350.0 108, 380.0 124 C 390.0 130, 390.0 138, 378.0 140 C 352.0 136, 320.0 130, 290.0 126 Z" fill="url(#ascWingCovert)" stroke="rgba(255,255,255,0.5)" stroke-width="0.75"/>
+
+          <!-- Radiant Celestial Quill Spines -->
+          <path d="M 286.0 122 C 328.0 70, 398.0 22, 480.0 32" stroke="url(#ascQuillGrad)" stroke-width="1.40" stroke-linecap="round" fill="none"/>
+          <path d="M 288.0 125 C 345.0 76, 422.0 48, 510.0 62" stroke="url(#ascQuillGrad)" stroke-width="1.32" stroke-linecap="round" fill="none"/>
+          <path d="M 290.0 128 C 362.0 90, 442.0 75, 528.0 100" stroke="url(#ascQuillGrad)" stroke-width="1.24" stroke-linecap="round" fill="none"/>
+          <path d="M 292.0 132 C 372.0 104, 452.0 108, 526.0 140" stroke="url(#ascQuillGrad)" stroke-width="1.16" stroke-linecap="round" fill="none"/>
+          <path d="M 294.0 136 C 380.0 120, 452.0 135, 510.0 178" stroke="url(#ascQuillGrad)" stroke-width="1.08" stroke-linecap="round" fill="none"/>
+          <path d="M 296.0 140 C 380.0 135, 440.0 162, 484.0 212" stroke="url(#ascQuillGrad)" stroke-width="1.00" stroke-linecap="round" fill="none"/>
+          <path d="M 298.0 144 C 378.0 152, 425.0 190, 452.0 238" stroke="url(#ascQuillGrad)" stroke-width="0.92" stroke-linecap="round" fill="none"/>
+          <path d="M 300.0 148 C 375.0 168, 410.0 215, 418.0 252" stroke="url(#ascQuillGrad)" stroke-width="0.84" stroke-linecap="round" fill="none"/>
+        </g>
+
+        <!-- Floating Celestial Feather Motes / Solar Embers -->
+        <g class="celestial-feather-motes">
+          <polygon points="56,28 59,33 64,36 59,39 56,44 53,39 48,36 53,33" fill="#ffffff" opacity="0.85"/>
+          <polygon points="484,28 487,33 492,36 487,39 484,44 481,39 476,36 481,33" fill="#ffffff" opacity="0.85"/>
+          <polygon points="26,88 28,92 32,94 28,96 26,100 24,96 20,94 24,92" fill="#fef08a" opacity="0.75"/>
+          <polygon points="514,88 516,92 520,94 516,96 514,100 512,96 508,94 512,92" fill="#fef08a" opacity="0.75"/>
+          <polygon points="34,165 36,168 39,170 36,172 34,175 32,172 29,170 32,168" fill="#fbbf24" opacity="0.7"/>
+          <polygon points="506,165 508,168 511,170 508,172 506,175 504,172 501,170 504,168" fill="#fbbf24" opacity="0.7"/>
         </g>
       </g>
 

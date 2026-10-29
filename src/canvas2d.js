@@ -103,8 +103,9 @@ export class CanvasStoryEngine {
 
   initWalls() {
     const w = this.width;
-    const slabW = Math.min(980, Math.max(360, w * 0.82));
-    const slabH = Math.min(210, Math.max(165, slabW * 0.22));
+    const isMobile = w < 640;
+    const slabW = isMobile ? Math.min(460, Math.max(280, w * 0.90)) : Math.min(980, Math.max(360, w * 0.82));
+    const slabH = isMobile ? Math.min(185, Math.max(130, slabW * 0.28)) : Math.min(210, Math.max(165, slabW * 0.22));
 
     // 7 Expanded Monumental Chapters (Deep Literary Narrative of Collapse & Defiance)
     const wallDefs = [
@@ -245,7 +246,7 @@ export class CanvasStoryEngine {
         baseY: bodyY,
         vx: (Math.random() - 0.5) * 2.2,
         vy: 1.2 + Math.random() * 2.8,
-        size: 1.2 + Math.random() * 2.8,
+        size: 1.6 + Math.random() * 2.2,
         life: Math.random(),
         maxLife: 0.6 + Math.random() * 0.8,
         speed: 0.007 + Math.random() * 0.015,
@@ -336,14 +337,18 @@ export class CanvasStoryEngine {
 
     const topHalfW = (1 - truth) * (w * 0.40) + truth * 28;
     const botHalfW = (1 - truth) * 28 + truth * (w * 0.40);
+    // In ascent the shaft keeps widening to the bottom edge of the frame and fades
+    // into the mirror floor — otherwise its wide base ends on a hard, truncated edge.
+    const beamBottomY = truth > 0.05 ? h : h * 0.88;
 
     ctx.save();
 
     let beamGrad;
     if (truth > 0.05) {
-      beamGrad = ctx.createLinearGradient(0, h * 0.88, 0, 0);
-      beamGrad.addColorStop(0, `rgba(245, 158, 11, ${truth * 0.06})`);
-      beamGrad.addColorStop(0.45, `rgba(251, 191, 36, ${truth * 0.14})`);
+      beamGrad = ctx.createLinearGradient(0, h, 0, 0);
+      beamGrad.addColorStop(0, 'rgba(245, 158, 11, 0)');
+      beamGrad.addColorStop(0.18, `rgba(245, 158, 11, ${truth * 0.05})`);
+      beamGrad.addColorStop(0.55, `rgba(251, 191, 36, ${truth * 0.12})`);
       beamGrad.addColorStop(1, `rgba(254, 240, 138, ${truth * 0.28})`);
     } else {
       beamGrad = ctx.createLinearGradient(0, 0, 0, h * 0.88);
@@ -355,21 +360,29 @@ export class CanvasStoryEngine {
     ctx.beginPath();
     ctx.moveTo(shaftCenterX - topHalfW, 0);
     ctx.lineTo(shaftCenterX + topHalfW, 0);
-    ctx.lineTo(shaftCenterX + botHalfW, h * 0.88);
-    ctx.lineTo(shaftCenterX - botHalfW, h * 0.88);
+    ctx.lineTo(shaftCenterX + botHalfW, beamBottomY);
+    ctx.lineTo(shaftCenterX - botHalfW, beamBottomY);
     ctx.closePath();
     ctx.fill();
 
     // Architectural Vector Chevron Lines
-    ctx.strokeStyle = truth > 0.05
-      ? `rgba(251, 191, 36, ${0.15 + truth * 0.25})`
-      : 'rgba(147, 165, 207, 0.2)';
+    if (truth > 0.05) {
+      // Fade the legs out just above the mirror so they dissolve into the floor
+      const legBase = 0.15 + truth * 0.25;
+      const legGrad = ctx.createLinearGradient(0, h * 0.80, 0, 0);
+      legGrad.addColorStop(0, 'rgba(251, 191, 36, 0)');
+      legGrad.addColorStop(0.35, `rgba(251, 191, 36, ${legBase * 0.4})`);
+      legGrad.addColorStop(1, `rgba(251, 191, 36, ${legBase})`);
+      ctx.strokeStyle = legGrad;
+    } else {
+      ctx.strokeStyle = 'rgba(147, 165, 207, 0.2)';
+    }
     ctx.lineWidth = 1.4;
     ctx.beginPath();
     ctx.moveTo(shaftCenterX - topHalfW, 0);
-    ctx.lineTo(shaftCenterX - botHalfW, h * 0.88);
+    ctx.lineTo(shaftCenterX - botHalfW, beamBottomY);
     ctx.moveTo(shaftCenterX + topHalfW, 0);
-    ctx.lineTo(shaftCenterX + botHalfW, h * 0.88);
+    ctx.lineTo(shaftCenterX + botHalfW, beamBottomY);
     ctx.stroke();
 
     // Directional chevron indicator (arrowhead) in slipstream:
@@ -396,14 +409,14 @@ export class CanvasStoryEngine {
     // 4. Distant Brutalist Monolith Pillars (Multi-layered atmospheric architecture)
     this.renderMonoliths(ctx, w, h, p, truth, t, false);
 
-    // 5. Full-Screen Image-to-Particles Scene (The scene images themselves ARE the particles!)
-    this.particleImageEngine.render(ctx, w, h, truth);
-
-    // 6. 7 Monumental Environmental Chapters with Chiseled Poetry
+    // 5. 7 Monumental Environmental Chapters with Chiseled Poetry (Text boxes / slabs in environment)
     this.renderFracturingWalls(ctx, w, h, p, truth);
 
-    // 7. Near-Field Foreground Monoliths (Framing the descent)
+    // 6. Near-Field Foreground Monoliths (Framing the descent)
     this.renderMonoliths(ctx, w, h, p, truth, t, true);
+
+    // 7. Full-Screen Image-to-Particles Scene (Rendered ABOVE the text boxes so particles are completely visible!)
+    this.particleImageEngine.render(ctx, w, h, truth);
 
     // 8. Water Mirror Floor at 100% descent
     this.renderWaterMirror(ctx, w, h, p, truth);
@@ -480,13 +493,15 @@ export class CanvasStoryEngine {
         ctx.stroke();
       }
 
-      // High-Fashion Editorial Monolith Numbering Stencils
+      // Minimal Navigational Altitude Markers (matching HUD Zenith / Mirror Floor scale)
       if (m.depth > 0.55) {
-        ctx.font = '700 9px "Space Mono", monospace';
+        const altK = Math.max(0, Math.min(10, (1 - m.progress) * 10)).toFixed(1);
+        const label = m.width > 55 ? `${altK}K FT` : `${altK}K`;
+        ctx.font = '700 8.5px "Space Mono", monospace';
         ctx.textAlign = 'center';
-        ctx.letterSpacing = '0.25em';
-        ctx.fillStyle = truth > 0.05 ? 'rgba(251, 191, 36, 0.4)' : 'rgba(255, 255, 255, 0.25)';
-        ctx.fillText(`MN-${10 + i}`, 0, -m.height / 2 + 22);
+        ctx.letterSpacing = '0.2em';
+        ctx.fillStyle = truth > 0.05 ? 'rgba(251, 191, 36, 0.4)' : 'rgba(255, 255, 255, 0.22)';
+        ctx.fillText(label, 0, -m.height / 2 + 22);
       }
 
       ctx.restore();
@@ -766,6 +781,8 @@ export class CanvasStoryEngine {
       }
 
       let drawX, drawY, color, alpha;
+      const descColors = ['#00f0ff', '#38bdf8', '#7dd3fc', '#e0f2fe'];
+      const ascColors = ['#fbbf24', '#ffd700', '#f59e0b', '#fffbeb'];
 
       if (truth > 0.5) {
         const span = 40 + p.wingT * 180;
@@ -775,7 +792,7 @@ export class CanvasStoryEngine {
         drawX = figX + p.side * span + Math.sin(t * 5 + i) * 6;
         drawY = figY - 20 - arch + flapOffset + p.y * 0.5;
 
-        color = i % 2 === 0 ? '#fbbf24' : '#ffffff';
+        color = ascColors[i % ascColors.length];
         alpha = Math.sin((p.life / p.maxLife) * Math.PI) * 0.85 * truth;
       } else {
         // Disperse outward and float upward in the wake of the fall
@@ -785,10 +802,10 @@ export class CanvasStoryEngine {
         drawX = figX + p.x;
         drawY = figY + p.y;
 
-        color = i % 4 === 0 ? '#f97316' : (i % 4 === 1 ? '#cbd5e1' : (i % 4 === 2 ? '#93c5fd' : '#e0f2fe'));
-        // Smooth sine fade-in and fade-out so particles appear naturally
+        color = descColors[i % descColors.length];
+        // Smooth sine fade-in and fade-out matching background stardust
         const progress = Math.min(1, Math.max(0, p.life / p.maxLife));
-        alpha = Math.sin(progress * Math.PI) * 0.72;
+        alpha = Math.sin(progress * Math.PI) * 0.75;
       }
 
       ctx.fillStyle = color;

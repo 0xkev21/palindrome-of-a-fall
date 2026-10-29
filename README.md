@@ -42,8 +42,10 @@ scrolling back up flips `truthMode` from 0 to 1 over 1.8s, which simultaneously
 swaps the artwork set (`actN_desc` → `actN_asc`), the palette (cyan → gold), the
 soundscape (descent pad → ascent pad) and the story text.
 
-Controls: scroll (or drag) to move through the acts, click **SOUND** to enable
-audio (browsers require a gesture; the first click downloads ~750 kB of audio).
+Controls: scroll (or drag) to move through the acts. Sound is **on by default** —
+browsers block playback until the user interacts, so the soundtrack unlocks on the
+first scroll, click or key press (the audio bytes are pre-fetched during the
+preloader, so it starts without a download delay). Click **SOUND** to mute.
 
 ## Assets
 

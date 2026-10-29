@@ -12,8 +12,11 @@
 export class SoundDesign {
   constructor() {
     this.ctx = null;
-    this.isActive = false;
+    this.isActive = true;
     this.buffers = {};
+    this.rawBuffers = {};
+    this.prefetchPromise = null;
+    this.readyPromise = null;
     this.sources = {};
     this.gains = {};
     this.masterGain = null;
@@ -30,41 +33,91 @@ export class SoundDesign {
     };
   }
 
-  async init() {
-    // Guard against concurrent first clicks starting two AudioContexts.
-    if (this.ctx) return this.readyPromise;
-    this.readyPromise = (async () => {
+  /**
+   * Synchronously create + resume the AudioContext and its gain graph.
+   * MUST be called directly inside a user-gesture handler (no awaits before it),
+   * otherwise Safari — and Chrome under some policies — keeps the context
+   * suspended and the soundtrack stays silent.
+   */
+  unlock() {
+    if (!this.ctx) {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       this.ctx = new AudioContext();
+      this.buildGraph();
+    }
 
-      this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.setValueAtTime(0.0001, this.ctx.currentTime);
-      this.masterGain.connect(this.ctx.destination);
+    // 'interrupted' is iOS Safari's paused state
+    if (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted') {
+      this.ctx.resume().catch(() => {});
+    }
 
-      // Create gain nodes for ambient loops
-      this.gains.descent = this.ctx.createGain();
-      this.gains.descent.gain.setValueAtTime(0.7, this.ctx.currentTime);
-      this.gains.descent.connect(this.masterGain);
+    if (this.isActive && this.isLoaded) {
+      this.startAmbientLoops();
+    }
 
-      this.gains.ascent = this.ctx.createGain();
-      this.gains.ascent.gain.setValueAtTime(0.0001, this.ctx.currentTime);
-      this.gains.ascent.connect(this.masterGain);
+    return this.ctx;
+  }
 
-      // SFX Bus
-      this.gains.sfx = this.ctx.createGain();
-      this.gains.sfx.gain.setValueAtTime(0.85, this.ctx.currentTime);
-      this.gains.sfx.connect(this.masterGain);
+  buildGraph() {
+    const ctx = this.ctx;
 
-      // Preload audio files
+    this.masterGain = ctx.createGain();
+    const initialVol = this.isActive ? 0.75 : 0.0001;
+    this.masterGain.gain.setValueAtTime(initialVol, ctx.currentTime);
+    this.masterGain.connect(ctx.destination);
+
+    // Create gain nodes for ambient loops
+    this.gains.descent = ctx.createGain();
+    this.gains.descent.gain.setValueAtTime(0.7, ctx.currentTime);
+    this.gains.descent.connect(this.masterGain);
+
+    this.gains.ascent = ctx.createGain();
+    this.gains.ascent.gain.setValueAtTime(0.0001, ctx.currentTime);
+    this.gains.ascent.connect(this.masterGain);
+
+    // SFX Bus
+    this.gains.sfx = ctx.createGain();
+    this.gains.sfx.gain.setValueAtTime(0.85, ctx.currentTime);
+    this.gains.sfx.connect(this.masterGain);
+  }
+
+  init() {
+    // Guard against concurrent first clicks starting two AudioContexts.
+    if (this.readyPromise) return this.readyPromise;
+
+    this.readyPromise = (async () => {
+      this.unlock();
       await this.loadAllBuffers();
     })();
+
     return this.readyPromise;
   }
 
-  async loadBuffer(url) {
+  /**
+   * Download the audio bytes ahead of any user gesture. Decoding needs an
+   * AudioContext, but fetching does not — so the first interaction can start
+   * the soundtrack with zero network delay.
+   */
+  prefetch() {
+    if (this.prefetchPromise) return this.prefetchPromise;
+    this.prefetchPromise = Promise.all(
+      Object.entries(this.audioPaths).map(async ([key, url]) => {
+        try {
+          const response = await fetch(url);
+          if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+          this.rawBuffers[key] = await response.arrayBuffer();
+        } catch (err) {
+          console.warn(`[SoundDesign] Prefetch failed for ${url}:`, err);
+        }
+      })
+    );
+    return this.prefetchPromise;
+  }
+
+  async loadBuffer(key, url) {
     try {
-      const response = await fetch(url);
-      const arrayBuffer = await response.arrayBuffer();
+      const raw = this.rawBuffers[key];
+      const arrayBuffer = raw ? raw.slice(0) : await (await fetch(url)).arrayBuffer();
       return await this.ctx.decodeAudioData(arrayBuffer);
     } catch (err) {
       console.warn(`[SoundDesign] Error loading audio from ${url}:`, err);
@@ -73,10 +126,11 @@ export class SoundDesign {
   }
 
   async loadAllBuffers() {
+    await this.prefetch();
     const entries = Object.entries(this.audioPaths);
     await Promise.all(
       entries.map(async ([key, url]) => {
-        const buffer = await this.loadBuffer(url);
+        const buffer = await this.loadBuffer(key, url);
         if (buffer) {
           this.buffers[key] = buffer;
         }
@@ -114,6 +168,13 @@ export class SoundDesign {
     }
 
     this.updateTruth(this.truth);
+
+    if (this.isActive && this.masterGain) {
+      const now = this.ctx.currentTime;
+      this.masterGain.gain.cancelScheduledValues(now);
+      this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, now);
+      this.masterGain.gain.linearRampToValueAtTime(0.75, now + 0.3);
+    }
   }
 
   stopAmbientLoops() {
@@ -127,32 +188,42 @@ export class SoundDesign {
     }
   }
 
-  async toggle() {
-    if (!this.ctx) {
-      await this.init();
-    }
+  isRunning() {
+    return !!this.ctx && this.ctx.state === 'running';
+  }
 
-    if (this.ctx.state === 'suspended') {
-      await this.ctx.resume();
-    }
+  async enable() {
+    this.isActive = true;
 
-    this.isActive = !this.isActive;
+    // Create/resume the context synchronously, before any await, while the
+    // user gesture is still active (required by Safari's autoplay policy).
+    this.unlock();
+
+    if (!this.isLoaded) await this.init();
+    this.startAmbientLoops();
+
     const now = this.ctx.currentTime;
+    this.masterGain.gain.cancelScheduledValues(now);
+    this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, now);
+    this.masterGain.gain.linearRampToValueAtTime(0.75, now + 1.2);
 
-    if (this.isActive) {
-      if (this.isLoaded) {
-        this.startAmbientLoops();
-      }
-      this.masterGain.gain.cancelScheduledValues(now);
-      this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, now);
-      this.masterGain.gain.linearRampToValueAtTime(0.75, now + 1.2);
-    } else {
-      this.masterGain.gain.cancelScheduledValues(now);
-      this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, now);
-      this.masterGain.gain.linearRampToValueAtTime(0.0001, now + 0.8);
-    }
+    return this.isRunning();
+  }
 
-    return this.isActive;
+  async disable() {
+    this.isActive = false;
+    if (!this.ctx) return false;
+
+    const now = this.ctx.currentTime;
+    this.masterGain.gain.cancelScheduledValues(now);
+    this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, now);
+    this.masterGain.gain.linearRampToValueAtTime(0.0001, now + 0.8);
+
+    return false;
+  }
+
+  async toggle() {
+    return this.isActive ? this.disable() : this.enable();
   }
 
   updateScroll(progress, velocity = 0) {

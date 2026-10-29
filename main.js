@@ -24,10 +24,13 @@ const state = {
 // ==========================================
 // LENIS SMOOTH SCROLL ENGINE INITIALIZATION
 // ==========================================
+const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
 const lenis = new Lenis({
-  lerp: reduceMotion ? 1 : 0.05, // Heavy, cinematic, weighted fluid momentum (much smoother & less twitchy)
+  lerp: reduceMotion ? 1 : (isTouchDevice ? 0.08 : 0.05), // Natural fluid momentum on touch & desktop
   wheelMultiplier: 0.65, // Calms wheel speed so user doesn't fly past chapters
-  touchMultiplier: 0.9,
+  touchMultiplier: 1.6, // Tactile, responsive swipe momentum on mobile
+  syncTouch: true, // Eliminates mobile touch lag and rubber-band stutter
   smoothWheel: !reduceMotion,
   infinite: false,
   respectReducedMotion: true,
@@ -37,6 +40,7 @@ const lenis = new Lenis({
 lenis.on('scroll', (e) => {
   ScrollTrigger.update();
   state.scrollVelocity = e.velocity || 0;
+  if (typeof startAudio === 'function') startAudio();
 });
 
 // Drive Lenis smoothly via GSAP's central RAF ticker
@@ -46,23 +50,35 @@ gsap.ticker.add((time) => {
 gsap.ticker.lagSmoothing(0);
 
 // ==========================================
-// 1. PRELOADER (driven by real asset progress)
+// 1. PRELOADER & AUDIO ACTIVATION GATE
 // ==========================================
 const preloader = document.getElementById('preloader');
 const loaderFill = document.getElementById('loader-fill');
+const loaderTrack = document.getElementById('loader-track');
+const loaderEnter = document.getElementById('loader-enter');
+const loaderEnterBtn = document.getElementById('loader-enter-btn');
 
-const LOADER_MIN_MS = 1200;
+const LOADER_MIN_MS = 1000;
 const loaderStart = performance.now();
 let loaderTarget = 0;
 let loaderShown = 0;
+let isRevealed = false;
 
 gsap.ticker.add(() => {
-  loaderShown += (loaderTarget - loaderShown) * 0.15;
-  if (loaderTarget >= 1 && loaderShown > 0.995) loaderShown = 1;
+  loaderShown += (loaderTarget - loaderShown) * 0.18;
+  if (loaderTarget >= 1 && loaderShown > 0.99) loaderShown = 1;
   loaderFill.style.width = `${(loaderShown * 100).toFixed(1)}%`;
 });
 
-function revealSite() {
+async function enterExperience() {
+  if (isRevealed) return;
+  isRevealed = true;
+
+  // Unlocks & plays audio directly inside this user activation gesture
+  try {
+    await sound.enable();
+  } catch (_) {}
+
   loaderShown = 1;
   loaderTarget = 1;
   loaderFill.style.width = '100%';
@@ -70,6 +86,29 @@ function revealSite() {
   ScrollTrigger.refresh();
   lenis.resize();
 }
+
+function readyToEnter() {
+  loaderShown = 1;
+  loaderTarget = 1;
+  loaderFill.style.width = '100%';
+
+  // If autoplay is already running with sound, reveal immediately
+  if (sound.isRunning()) {
+    enterExperience();
+    return;
+  }
+
+  // Present the high-fashion editorial Enter gate
+  if (loaderTrack) loaderTrack.style.opacity = '0';
+  if (loaderEnter) loaderEnter.classList.add('ready');
+}
+
+if (preloader) {
+  preloader.addEventListener('click', enterExperience);
+}
+window.addEventListener('keydown', () => {
+  if (!isRevealed) enterExperience();
+});
 
 // ==========================================
 // 2. KINETIC MAGNETIC CURSOR
@@ -82,10 +121,22 @@ let mouseY = window.innerHeight / 2;
 let dotX = mouseX, dotY = mouseY;
 let ringX = mouseX, ringY = mouseY;
 
-window.addEventListener('mousemove', (e) => {
-  mouseX = e.clientX;
-  mouseY = e.clientY;
-});
+function updatePointerPos(x, y) {
+  mouseX = x;
+  mouseY = y;
+}
+
+window.addEventListener('mousemove', (e) => updatePointerPos(e.clientX, e.clientY), { passive: true });
+window.addEventListener('touchmove', (e) => {
+  if (e.touches && e.touches.length > 0) {
+    updatePointerPos(e.touches[0].clientX, e.touches[0].clientY);
+  }
+}, { passive: true });
+window.addEventListener('touchstart', (e) => {
+  if (e.touches && e.touches.length > 0) {
+    updatePointerPos(e.touches[0].clientX, e.touches[0].clientY);
+  }
+}, { passive: true });
 
 if (reduceMotion) {
   // No trailing/eased cursor: track the pointer exactly, no per-frame motion.
@@ -121,26 +172,61 @@ const sound = new SoundDesign();
 const audioBtn = document.getElementById('audio-toggle-btn');
 const audioBtnLabel = document.getElementById('audio-btn-label');
 
-let audioBusy = false;
-audioBtn.addEventListener('click', async () => {
-  if (audioBusy) return;
-  audioBusy = true;
+// Sound is ON by default. Browsers block playback until the user interacts with
+// the page, so the soundtrack is unlocked on the first scroll/click/key press —
+// the HUD shows the intended state ("SOUND: ON") from the very first frame.
+let audioDesired = true;
+let audioStarted = false;
 
-  // The first click downloads and decodes the soundscape (~750 kB)
-  if (!sound.isLoaded) audioBtnLabel.textContent = 'SOUND: LOADING…';
+function setAudioUI(on) {
+  audioBtn.classList.toggle('audio-active', on);
+  audioBtnLabel.textContent = on ? 'SOUND: ON' : 'SOUND: OFF';
+}
+setAudioUI(true);
+
+async function startAudio() {
+  if (!audioDesired) return;
+  sound.unlock();
 
   try {
-    const active = await sound.toggle();
-    audioBtn.classList.toggle('audio-active', active);
-    audioBtnLabel.textContent = active ? 'SOUND: ON' : 'SOUND: OFF';
+    await sound.enable();
+    if (!audioDesired) {
+      await sound.disable();
+      return;
+    }
   } catch (err) {
-    console.warn('[SoundDesign] Toggle failed:', err);
-    sound.isActive = false;
-    audioBtn.classList.remove('audio-active');
-    audioBtnLabel.textContent = 'SOUND: OFF';
-  } finally {
-    audioBusy = false;
+    console.warn('[SoundDesign] Auto-audio attempt:', err);
   }
+
+  setAudioUI(audioDesired);
+}
+
+// 1. Warm audio and attempt immediate playback on boot
+sound.prefetch();
+startAudio();
+
+// 2. Also unlock on any subtle movement or presence (mouse move, scroll, touch) — no clicks required
+const audioGestures = [
+  'mousemove', 'pointermove', 'pointerdown', 'mousedown',
+  'wheel', 'scroll', 'touchstart', 'touchmove', 'keydown', 'click'
+];
+function onFirstAudioGesture(e) {
+  if (audioBtn && audioBtn.contains(e.target)) return;
+  startAudio();
+}
+audioGestures.forEach((evt) => window.addEventListener(evt, onFirstAudioGesture, { passive: true }));
+
+audioBtn.addEventListener('click', async (e) => {
+  e.stopPropagation();
+  audioDesired = !audioDesired;
+  setAudioUI(audioDesired);
+
+  if (audioDesired) {
+    await sound.enable();
+  } else {
+    await sound.disable();
+  }
+  setAudioUI(audioDesired);
 });
 
 // ==========================================
@@ -159,7 +245,7 @@ loaderTarget = particleEngine.loadProgress;
 Promise.all([particleEngine.ready, document.fonts.ready]).then(() => {
   loaderTarget = 1;
   const remaining = Math.max(0, LOADER_MIN_MS - (performance.now() - loaderStart));
-  setTimeout(revealSite, remaining + 220);
+  setTimeout(readyToEnter, remaining + 100);
 });
 
 // Sound effect callback when the boy collides with & shatters an environmental wall
