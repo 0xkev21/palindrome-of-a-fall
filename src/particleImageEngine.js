@@ -145,8 +145,8 @@ export class ParticleImageEngine {
     this.transitionWeight = 0;
     this.truth = 0;
     this.scrollVelocity = 0;
-    this.mouseX = 0;
-    this.mouseY = 0;
+    this.mouseX = -9999;
+    this.mouseY = -9999;
     this.motionScale = 1; // 0 disables ambient motion (prefers-reduced-motion)
     this.waveStart = -1;
     this.waveAmp = 0;
@@ -203,7 +203,7 @@ export class ParticleImageEngine {
       uTransition: { value: 0.0 },
       uTruth: { value: 0.0 },
       uTime: { value: 0.0 },
-      uMouse: { value: new THREE.Vector2(-999, -999) },
+      uMouse: { value: new THREE.Vector2(-9999, -9999) },
       uScrollVelocity: { value: 0.0 },
       uResolution: {
         value: new THREE.Vector2(window.innerWidth, window.innerHeight),
@@ -278,17 +278,19 @@ export class ParticleImageEngine {
         // 2. Vertical Slipstream Velocity Stretch
         pos.y += uScrollVelocity * (0.12 + aSeed * 0.08);
 
-        // 3. Expansive Interactive Pointer Dispersion (Adapts radius to mobile/desktop screens)
-        vec2 mouseDist = pos.xy - uMouse;
-        float d = length(mouseDist);
-        float disperseRadius = min(320.0, max(160.0, uResolution.x * 0.42));
-        if (d < disperseRadius && d > 0.0) {
-          float normD = d / disperseRadius;
-          // Smooth organic cubic falloff for fluid stardust dispersal
-          float pushFactor = (1.0 - normD) * (1.0 - normD);
-          float push = pushFactor * min(70.0, uResolution.x * 0.15) * uMotion;
-          pos.xy += (mouseDist / d) * push;
-          pos.z += push * 2.0;
+        // 3. Expansive Interactive Pointer Dispersion (Desktop only, deactivated on mobile/when mouse is offscreen)
+        if (uMouse.x > -500.0) {
+          vec2 mouseDist = pos.xy - uMouse;
+          float d = length(mouseDist);
+          float disperseRadius = min(320.0, max(160.0, uResolution.x * 0.42));
+          if (d < disperseRadius && d > 0.0) {
+            float normD = d / disperseRadius;
+            // Smooth organic cubic falloff for fluid stardust dispersal
+            float pushFactor = (1.0 - normD) * (1.0 - normD);
+            float push = pushFactor * min(70.0, uResolution.x * 0.15) * uMotion;
+            pos.xy += (mouseDist / d) * push;
+            pos.z += push * 2.0;
+          }
         }
 
         // 4. Chapter Shift Dispersal — the image obeys the story's gravity:
@@ -373,8 +375,20 @@ export class ParticleImageEngine {
   ) {
     this.scrollVelocity = scrollVelocity;
     this.truth = truth;
-    this.mouseX = mouseX;
-    this.mouseY = h - mouseY; // Flip Y for WebGL
+
+    const isMobile =
+      w <= 768 ||
+      (typeof window !== "undefined" &&
+        (window.matchMedia("(hover: none) and (pointer: coarse)").matches ||
+          window.matchMedia("(pointer: coarse)").matches));
+
+    if (isMobile || mouseX < -500 || mouseY < -500) {
+      this.mouseX = -9999;
+      this.mouseY = -9999;
+    } else {
+      this.mouseX = mouseX;
+      this.mouseY = h - mouseY; // Flip Y for WebGL
+    }
 
     // Identify active acts and interpolation weight
     let currIdx = 0;

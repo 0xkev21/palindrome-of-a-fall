@@ -68,14 +68,16 @@ const vertexShader = `
     // Convert normalized model coords (-0.5 to 0.5) to screen pixels
     vec2 screen = uCenter + pos.xy * uSize;
 
-    // 4. Interactive Mouse Dispersion (particles part gently when hovered)
-    vec2 mouseDist = screen - uMouse;
-    float d = length(mouseDist);
-    float disperseRadius = 150.0;
-    if (d < disperseRadius && d > 0.0) {
-      float push = pow(1.0 - d / disperseRadius, 2.0) * 32.0;
-      screen += (mouseDist / d) * push;
-      pos.z += push * 0.003;
+    // 4. Interactive Mouse Dispersion (Desktop only, deactivated on mobile/when mouse is offscreen)
+    if (uMouse.x > -500.0) {
+      vec2 mouseDist = screen - uMouse;
+      float d = length(mouseDist);
+      float disperseRadius = 150.0;
+      if (d < disperseRadius && d > 0.0) {
+        float push = pow(1.0 - d / disperseRadius, 2.0) * 32.0;
+        screen += (mouseDist / d) * push;
+        pos.z += push * 0.003;
+      }
     }
 
     // 5. Environmental Shockwave Ripple
@@ -190,7 +192,7 @@ export class BoyParticleHalo {
       uTruth: { value: 0 },
       uVelocity: { value: 0 },
       uPixelRatio: { value: 1 },
-      uMouse: { value: new THREE.Vector2(-999, -999) },
+      uMouse: { value: new THREE.Vector2(-9999, -9999) },
       uWaveT: { value: -1 },
       uWaveAmp: { value: 0 },
     };
@@ -335,8 +337,8 @@ export class BoyParticleHalo {
     centerY,
     figureSize,
     pixelRatio = 1,
-    mouseX = -999,
-    mouseY = -999,
+    mouseX = -9999,
+    mouseY = -9999,
     waveT = -1,
     waveAmp = 0
   ) {
@@ -347,7 +349,19 @@ export class BoyParticleHalo {
     this.uniforms.uTruth.value = truth;
     this.uniforms.uVelocity.value = velocity;
     this.uniforms.uPixelRatio.value = pixelRatio;
-    this.uniforms.uMouse.value.set(mouseX, height - mouseY);
+
+    const isMobile =
+      width <= 768 ||
+      (typeof window !== "undefined" &&
+        (window.matchMedia("(hover: none) and (pointer: coarse)").matches ||
+          window.matchMedia("(pointer: coarse)").matches));
+
+    if (isMobile || mouseX < -500 || mouseY < -500) {
+      this.uniforms.uMouse.value.set(-9999, -9999);
+    } else {
+      this.uniforms.uMouse.value.set(mouseX, height - mouseY);
+    }
+
     this.uniforms.uWaveT.value = waveT;
     this.uniforms.uWaveAmp.value = waveAmp;
   }

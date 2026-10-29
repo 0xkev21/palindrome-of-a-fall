@@ -27,7 +27,9 @@ const state = {
 // LENIS SMOOTH SCROLL ENGINE INITIALIZATION
 // ==========================================
 const isTouchDevice =
-  window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+  window.matchMedia("(hover: none) and (pointer: coarse)").matches ||
+  window.matchMedia("(pointer: coarse)").matches ||
+  window.innerWidth <= 768;
 
 const lenis = new Lenis({
   lerp: reduceMotion ? 1 : isTouchDevice ? 0.08 : 0.05, // Natural fluid momentum on touch & desktop
@@ -114,60 +116,80 @@ window.addEventListener("keydown", () => {
 });
 
 // ==========================================
-// 2. KINETIC MAGNETIC CURSOR
+// 2. KINETIC MAGNETIC CURSOR (DESKTOP ONLY)
 // ==========================================
 const cursorDot = document.getElementById("cursor-dot");
 const cursorRing = document.getElementById("cursor-ring");
 
-let mouseX = window.innerWidth / 2;
-let mouseY = window.innerHeight / 2;
-let dotX = mouseX,
-  dotY = mouseY;
-let ringX = mouseX,
-  ringY = mouseY;
+let mouseX = -9999;
+let mouseY = -9999;
+let dotX = -9999,
+  dotY = -9999;
+let ringX = -9999,
+  ringY = -9999;
+let hasPointerMoved = false;
 
 function updatePointerPos(x, y) {
+  if (isTouchDevice) return;
   mouseX = x;
   mouseY = y;
-}
-
-if (!isTouchDevice) {
-  window.addEventListener(
-    "mousemove",
-    (e) => updatePointerPos(e.clientX, e.clientY),
-    { passive: true },
-  );
+  if (!hasPointerMoved) {
+    hasPointerMoved = true;
+    dotX = mouseX;
+    dotY = mouseY;
+    ringX = mouseX;
+    ringY = mouseY;
+    if (cursorDot) cursorDot.style.opacity = "1";
+    if (cursorRing) cursorRing.style.opacity = "1";
+  }
 }
 
 if (isTouchDevice) {
   cursorDot?.remove();
   cursorRing?.remove();
-} else if (reduceMotion) {
-  // No trailing/eased cursor: track the pointer exactly, no per-frame motion.
-  window.addEventListener("mousemove", () => {
-    const t = `translate3d(${mouseX}px, ${mouseY}px, 0) translate(-50%, -50%)`;
-    cursorDot?.style.setProperty("transform", t);
-    cursorRing?.style.setProperty("transform", t);
-  });
 } else {
-  gsap.ticker.add(() => {
-    dotX += (mouseX - dotX) * 0.35;
-    dotY += (mouseY - dotY) * 0.35;
-    ringX += (mouseX - ringX) * 0.16;
-    ringY += (mouseY - ringY) * 0.16;
+  window.addEventListener(
+    "mousemove",
+    (e) => updatePointerPos(e.clientX, e.clientY),
+    { passive: true },
+  );
 
-    cursorDot?.style.setProperty(
-      "transform",
-      `translate3d(${dotX}px, ${dotY}px, 0) translate(-50%, -50%)`,
-    );
-    cursorRing?.style.setProperty(
-      "transform",
-      `translate3d(${ringX}px, ${ringY}px, 0) translate(-50%, -50%)`,
-    );
+  window.addEventListener("mouseleave", () => {
+    if (cursorDot) cursorDot.style.opacity = "0";
+    if (cursorRing) cursorRing.style.opacity = "0";
+    hasPointerMoved = false;
   });
+
+  if (reduceMotion) {
+    // No trailing/eased cursor: track the pointer exactly, no per-frame motion.
+    window.addEventListener("mousemove", () => {
+      if (!hasPointerMoved) return;
+      const t = `translate3d(${mouseX}px, ${mouseY}px, 0) translate(-50%, -50%)`;
+      cursorDot?.style.setProperty("transform", t);
+      cursorRing?.style.setProperty("transform", t);
+    });
+  } else {
+    gsap.ticker.add(() => {
+      if (!hasPointerMoved) return;
+      dotX += (mouseX - dotX) * 0.35;
+      dotY += (mouseY - dotY) * 0.35;
+      ringX += (mouseX - ringX) * 0.16;
+      ringY += (mouseY - ringY) * 0.16;
+
+      cursorDot?.style.setProperty(
+        "transform",
+        `translate3d(${dotX}px, ${dotY}px, 0) translate(-50%, -50%)`,
+      );
+      cursorRing?.style.setProperty(
+        "transform",
+        `translate3d(${ringX}px, ${ringY}px, 0) translate(-50%, -50%)`,
+      );
+    });
+  }
 }
 
 function bindHoverables() {
+  if (isTouchDevice) return;
   document.querySelectorAll(".interactive, button, a").forEach((el) => {
     el.addEventListener("mouseenter", () =>
       document.body.classList.add("hovering"),
@@ -223,29 +245,33 @@ async function startAudio() {
 sound.prefetch();
 startAudio();
 
-// 2. Also unlock on any subtle movement or presence (mouse move, scroll, touch) — no clicks required
+// 2. Unlock on genuine user activation gestures (click, tap, keypress)
 const audioGestures = [
-  "mousemove",
-  "pointermove",
   "pointerdown",
-  "mousedown",
-  "wheel",
-  "scroll",
   "touchstart",
-  "touchmove",
   "keydown",
   "click",
 ];
+
+function removeAudioGestureListeners() {
+  audioGestures.forEach((evt) =>
+    window.removeEventListener(evt, onFirstAudioGesture),
+  );
+}
+
 function onFirstAudioGesture(e) {
   if (audioBtn && audioBtn.contains(e.target)) return;
+  removeAudioGestureListeners();
   startAudio();
 }
+
 audioGestures.forEach((evt) =>
   window.addEventListener(evt, onFirstAudioGesture, { passive: true }),
 );
 
 audioBtn.addEventListener("click", async (e) => {
   e.stopPropagation();
+  removeAudioGestureListeners();
   audioDesired = !audioDesired;
   setAudioUI(audioDesired);
 
@@ -584,7 +610,10 @@ function animate() {
   // Smooth Hero Character Parallax & Weightless Drift
   if (charContainer) {
     const motion = reduceMotion ? 0 : 1;
-    const normX = (mouseX / window.innerWidth) * 2 - 1;
+    const normX =
+      hasPointerMoved && !isTouchDevice
+        ? (mouseX / window.innerWidth) * 2 - 1
+        : 0;
     const breathY = Math.sin(currentTime * 1.5) * 8 * motion;
     const tilt = (normX * 4 - state.scrollVelocity * 0.12) * motion;
     const soarLift = state.truthMode * (reduceMotion ? -8 : -24);

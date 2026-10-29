@@ -22,7 +22,7 @@ export class CanvasStoryEngine {
     this.scrollVelocity = 0;
     this.truthMode = 0;
 
-    this.mouse = { x: this.width / 2, y: this.height / 2, normX: 0, normY: 0 };
+    this.mouse = { x: -9999, y: -9999, normX: 0, normY: 0, active: false };
 
     // Water shockwaves
     this.shockwaves = [];
@@ -72,11 +72,27 @@ export class CanvasStoryEngine {
       this.initMonoliths();
       this.initSlipstream();
     });
+    const isMobileDevice = () =>
+      this.width <= 768 ||
+      (typeof window !== "undefined" &&
+        (window.matchMedia("(hover: none) and (pointer: coarse)").matches ||
+          window.matchMedia("(pointer: coarse)").matches));
+
     window.addEventListener("mousemove", (e) => {
+      if (isMobileDevice()) return;
       this.mouse.x = e.clientX;
       this.mouse.y = e.clientY;
       this.mouse.normX = (e.clientX / this.width) * 2 - 1;
       this.mouse.normY = (e.clientY / this.height) * 2 - 1;
+      this.mouse.active = true;
+    });
+
+    window.addEventListener("mouseleave", () => {
+      this.mouse.x = -9999;
+      this.mouse.y = -9999;
+      this.mouse.normX = 0;
+      this.mouse.normY = 0;
+      this.mouse.active = false;
     });
   }
 
@@ -362,18 +378,29 @@ export class CanvasStoryEngine {
     this.scrollVelocity = scrollVelocity;
     this.truthMode = truthMode;
 
-    const isTouchLayout = this.width <= 768;
-    const figX = this.width * 0.5 + (isTouchLayout ? 0 : this.mouse.normX * 18);
+    const isTouchLayout =
+      this.width <= 768 ||
+      (typeof window !== "undefined" &&
+        (window.matchMedia("(hover: none) and (pointer: coarse)").matches ||
+          window.matchMedia("(pointer: coarse)").matches));
+    const figX =
+      this.width * 0.5 +
+      (isTouchLayout || !this.mouse.active ? 0 : this.mouse.normX * 18);
     const figY =
       this.height * 0.52 + (isTouchLayout ? 0 : Math.sin(time * 1.5) * 6);
+
+    const targetMouseX =
+      isTouchLayout || !this.mouse.active ? -9999 : this.mouse.x;
+    const targetMouseY =
+      isTouchLayout || !this.mouse.active ? -9999 : this.mouse.y;
 
     this.particleImageEngine.update(
       time,
       scrollProgress,
       scrollVelocity,
       truthMode,
-      this.mouse.x,
-      this.mouse.y,
+      targetMouseX,
+      targetMouseY,
       figX,
       figY,
       this.width,
@@ -485,8 +512,14 @@ export class CanvasStoryEngine {
     ctx.restore();
 
     // Boy's screen focal center for wake collision & focal drift
-    const isTouchLayout = w <= 768;
-    const figX = w * 0.5 + (isTouchLayout ? 0 : this.mouse.normX * 18);
+    const isTouchLayout =
+      w <= 768 ||
+      (typeof window !== "undefined" &&
+        (window.matchMedia("(hover: none) and (pointer: coarse)").matches ||
+          window.matchMedia("(pointer: coarse)").matches));
+    const figX =
+      w * 0.5 +
+      (isTouchLayout || !this.mouse.active ? 0 : this.mouse.normX * 18);
     const figY = h * 0.52 + (isTouchLayout ? 0 : Math.sin(t * 1.5) * 6);
 
     // 3. High-Speed Vertical Slipstream Streaks (Clean editorial motion)

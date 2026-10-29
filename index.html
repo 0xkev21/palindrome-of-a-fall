@@ -223,8 +223,9 @@
       pointer-events: none !important;
       z-index: 9999;
       transform: translate(-50%, -50%);
-      transition: width 0.3s, height 0.3s, background 0.3s;
+      transition: width 0.3s, height 0.3s, background 0.3s, opacity 0.3s;
       mix-blend-mode: difference;
+      opacity: 0;
     }
     .cursor-ring {
       position: fixed;
@@ -237,7 +238,8 @@
       pointer-events: none !important;
       z-index: 9998;
       transform: translate(-50%, -50%);
-      transition: width 0.3s, height 0.3s, border-color 0.4s;
+      transition: width 0.3s, height 0.3s, border-color 0.4s, opacity 0.3s;
+      opacity: 0;
     }
     body.hovering .cursor-dot {
       width: 26px;
@@ -1157,8 +1159,8 @@
       .transcript { display: none; }
     }
 
-    /* Touch device rules: hide fake desktop kinetic cursor & restore native touch cursor */
-    @media (hover: none) and (pointer: coarse) {
+    /* Touch device & mobile rules: hide fake desktop kinetic cursor & restore native touch cursor */
+    @media (hover: none) and (pointer: coarse), (pointer: coarse), (max-width: 768px) {
       .cursor-dot, .cursor-ring {
         display: none !important;
       }
@@ -1166,6 +1168,9 @@
       body,
       button,
       a,
+      input,
+      select,
+      textarea,
       [role="button"],
       .interactive {
         cursor: auto !important;
