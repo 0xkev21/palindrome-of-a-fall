@@ -127,6 +127,7 @@ export class ParticleImageEngine {
       antialias: true,
       powerPreference: "high-performance",
     });
+    this.renderer.setClearColor(0x000000, 0);
     this.pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
     this.renderer.setPixelRatio(this.pixelRatio);
     this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -257,8 +258,8 @@ export class ParticleImageEngine {
         // Luminance
         float lum = dot(col.rgb, vec3(0.299, 0.587, 0.114));
 
-        // Mode color enrichment: warm golden sunlight in Ascent
-        vec3 goldColor = vec3(col.r * 1.15 + 0.15, col.g * 1.05 + 0.10, col.b * 0.70);
+        // Mode color enrichment: warm golden sunlight in Ascent (proportional without boosting dark void)
+        vec3 goldColor = vec3(col.r * 1.18, col.g * 1.04, col.b * 0.65);
         vColor = mix(col.rgb, goldColor, uTruth);
 
         // Screen coordinate base
@@ -314,13 +315,16 @@ export class ParticleImageEngine {
         vec2 clip = norm * 2.0 - 1.0;
         gl_Position = vec4(clip.x, clip.y, pos.z * 0.001, 1.0);
 
-        // 6. Fine, Delicate Stardust Particle Sizing (1.8px to 4.6px - crisp, starry, NOT chunky blobs)
-        gl_PointSize = 1.8 + lum * 2.5 + aSeed * 0.7 + ring * 2.5;
+        // 6. Fine, Delicate Stardust Particle Sizing (calibrated for mobile and desktop screens)
+        float mobileScale = uResolution.x < 768.0 ? 0.72 : 1.0;
+        gl_PointSize = (1.5 + lum * 1.8 + aSeed * 0.6 + ring * 2.0) * mobileScale;
         vColor += ring * mix(vec3(0.55, 0.75, 1.0), vec3(1.0, 0.8, 0.35), uTruth) * 0.6;
 
-        // Alpha calculation: Clean thresholding allows dark negative space to dissolve,
-        // while luminous architectural & celestial features glow with fine stardust clarity
-        float lumFactor = smoothstep(0.04, 0.35, lum);
+        // Alpha calculation: Balanced thresholding preserves deep cinematic negative space in BOTH modes,
+        // preventing Ascent on mobile from becoming a solid wall of yellow dots.
+        float minLum = mix(0.04, 0.12, uTruth);
+        float maxLum = mix(0.35, 0.50, uTruth);
+        float lumFactor = smoothstep(minLum, maxLum, lum);
         vAlpha = max(lumFactor * (0.45 + lum * 0.55) * (1.0 - scatterAmount * 0.4), ring * 0.5);
       }
     `;
@@ -415,6 +419,14 @@ export class ParticleImageEngine {
     this.uniforms.uResolution.value.set(w, h);
     this.uniforms.uGlobalAlpha.value = 0.92;
     this.uniforms.uMotion.value = this.motionScale;
+
+    const waveT =
+      this.waveStart < 0 ? -1 : (performance.now() - this.waveStart) * 0.001;
+    if (waveT > 1.6) this.waveStart = -1;
+    this.uniforms.uWaveT.value = waveT > 1.6 ? -1 : waveT;
+    this.uniforms.uWaveAmp.value = this.waveAmp;
+    this.uniforms.uWaveOrigin.value.set(boyX, h - boyY);
+
     this.boyParticleHalo.update(
       performance.now() * 0.001,
       scrollVelocity,
@@ -424,20 +436,17 @@ export class ParticleImageEngine {
       boyX,
       boyY,
       w < 768
-        ? Math.min(300, Math.max(210, w * 0.62))
-        : Math.min(560, Math.max(340, w * 0.48)),
+        ? Math.min(320, Math.max(220, w * 0.7))
+        : Math.min(620, Math.max(380, w * 0.52)),
       this.pixelRatio,
+      mouseX,
+      mouseY,
+      waveT > 1.6 ? -1 : waveT,
+      this.waveAmp
     );
-
-    const waveT =
-      this.waveStart < 0 ? -1 : (performance.now() - this.waveStart) * 0.001;
-    if (waveT > 1.6) this.waveStart = -1;
-    this.uniforms.uWaveT.value = waveT > 1.6 ? -1 : waveT;
-    this.uniforms.uWaveAmp.value = this.waveAmp;
-    this.uniforms.uWaveOrigin.value.set(boyX, h - boyY);
   }
 
-  render(ctx, w, h, truth) {
+  ensureRendererSize(w, h) {
     if (this.renderWidth !== w || this.renderHeight !== h) {
       this.renderWidth = w;
       this.renderHeight = h;
@@ -446,35 +455,117 @@ export class ParticleImageEngine {
       this.renderer.setSize(w, h, false);
       this.uniforms.uResolution.value.set(w, h);
     }
+  }
 
-    // Render WebGL Particle Cloud
-    this.renderer.render(this.scene, this.camera);
+  /**
+   * Render pass 1: Background narrative particle art (behind text cards & monoliths)
+   */
+  renderBackground(ctx, w, h, truth) {
+    this.ensureRendererSize(w, h);
 
-    // Draw the GPU Particle Cloud directly onto the canvas (NO raw image underneath!)
-    ctx.save();
-    ctx.drawImage(this.canvas, 0, 0, w, h);
-
-    // Subtle Monospace Telemetry Stamp in Background
-    const currentScene = this.scenes[this.currentActIdx];
-    if (currentScene) {
-      ctx.globalAlpha = 0.4;
-      ctx.font = '700 9px "Space Mono", monospace';
-      ctx.letterSpacing = "0.35em";
-      ctx.textAlign = "left";
-      ctx.fillStyle =
-        truth > 0.05 ? "rgba(251, 191, 36, 0.8)" : "rgba(147, 197, 253, 0.7)";
-      ctx.fillText(currentScene.title, 45, h - 45);
-
-      ctx.font = 'italic 400 11px "Plus Jakarta Sans", sans-serif';
-      ctx.letterSpacing = "0.05em";
-      ctx.fillStyle =
-        truth > 0.05
-          ? "rgba(254, 240, 138, 0.65)"
-          : "rgba(226, 232, 240, 0.55)";
-      const sub = truth > 0.05 ? currentScene.subAsc : currentScene.subDesc;
-      ctx.fillText(sub, 45, h - 28);
+    if (this.boyParticleHalo?.points) {
+      this.boyParticleHalo.points.visible = false;
+    }
+    if (this.points) {
+      this.points.visible = true;
     }
 
+    this.renderer.render(this.scene, this.camera);
+
+    ctx.save();
+    ctx.drawImage(this.canvas, 0, 0, w, h);
     ctx.restore();
+  }
+
+  /**
+   * High-clarity editorial telemetry HUD (unboxed, clean typography with accent rule)
+   */
+  renderTelemetry(ctx, w, h, truth) {
+    const currentScene = this.scenes[this.currentActIdx];
+    if (!currentScene) return;
+
+    ctx.save();
+    ctx.globalAlpha = 1.0;
+
+    const isAscent = truth > 0.05;
+    const sub = isAscent ? currentScene.subAsc : currentScene.subDesc;
+
+    // Responsive font metrics
+    const isMobile = w < 640;
+    const titleFont = isMobile
+      ? '700 10px "Space Mono", monospace'
+      : '700 11px "Space Mono", monospace';
+    const subFont = isMobile
+      ? '400 11.5px "Plus Jakarta Sans", sans-serif'
+      : '400 13px "Plus Jakarta Sans", sans-serif';
+
+    const startX = isMobile ? 22 : 45;
+    const baseY = h - (isMobile ? 32 : 42);
+
+    // Deep text shadow for crystal-clear readability directly over background particles
+    ctx.shadowColor = "rgba(0, 0, 0, 0.95)";
+    ctx.shadowBlur = 12;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 1;
+
+    // Elegant vertical accent hairline (matching the transcript style, no box)
+    const lineH = isMobile ? 26 : 30;
+    const lineY = baseY - (isMobile ? 12 : 14);
+    ctx.strokeStyle = isAscent
+      ? "rgba(251, 191, 36, 0.9)"
+      : "rgba(147, 197, 253, 0.9)";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(startX, lineY);
+    ctx.lineTo(startX, lineY + lineH);
+    ctx.stroke();
+
+    const textX = startX + 12;
+
+    // Title (ACT X // ...)
+    ctx.font = titleFont;
+    ctx.letterSpacing = "0.26em";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = isAscent ? "#fbbf24" : "#93c5fd";
+    ctx.fillText(currentScene.title, textX, baseY - (isMobile ? 5 : 6));
+
+    // Subtitle
+    ctx.font = subFont;
+    ctx.letterSpacing = "0.03em";
+    ctx.fillStyle = isAscent ? "#fef08a" : "#f8fafc";
+    ctx.fillText(sub, textX, baseY + (isMobile ? 10 : 12));
+
+    ctx.restore();
+  }
+
+  /**
+   * Render pass 2: The Hero Boy stardust point-cloud (rendered ON TOP OF text cards & slabs)
+   */
+  renderBoy(ctx, w, h, truth) {
+    this.ensureRendererSize(w, h);
+
+    if (this.points) {
+      this.points.visible = false;
+    }
+    if (this.boyParticleHalo?.points) {
+      this.boyParticleHalo.points.visible = true;
+    }
+
+    this.renderer.render(this.scene, this.camera);
+
+    ctx.save();
+    ctx.drawImage(this.canvas, 0, 0, w, h);
+    ctx.restore();
+
+    // Restore background points visibility for next cycle
+    if (this.points) {
+      this.points.visible = true;
+    }
+  }
+
+  render(ctx, w, h, truth) {
+    this.renderBackground(ctx, w, h, truth);
+    this.renderBoy(ctx, w, h, truth);
   }
 }

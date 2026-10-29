@@ -40,10 +40,21 @@
       --font-mono: 'Space Mono', monospace;
     }
 
-    * {
+    *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      cursor: none;
+    }
+
+    button,
+    a,
+    input,
+    select,
+    textarea,
+    [role="button"],
+    .interactive {
+      cursor: none !important;
     }
 
     /* Lenis Scroll Rules */
@@ -173,7 +184,7 @@
       text-transform: uppercase;
       padding: 0.75rem 2.2rem;
       border-radius: 999px;
-      cursor: pointer;
+      cursor: none;
       display: inline-flex;
       align-items: center;
       gap: 0.75rem;
@@ -260,8 +271,9 @@
       display: block;
     }
 
-    /* Hero Anime Character Container */
+    /* Hero Anime Character Container (Replaced by Native GPU Stardust Particle Model) */
     .character-container {
+      display: none !important;
       position: fixed;
       top: 50%;
       left: 50%;
@@ -413,7 +425,7 @@
       backdrop-filter: blur(10px);
       pointer-events: none !important;
       user-select: none;
-      cursor: default;
+      cursor: none;
       transition: all 0.4s ease;
     }
     body.ascent-mode .hud-status-pill {
@@ -436,7 +448,7 @@
       align-items: center;
       gap: 0.5rem;
       backdrop-filter: blur(10px);
-      cursor: pointer;
+      cursor: none;
     }
     .hud-btn:hover {
       border-color: #fff;
@@ -512,8 +524,9 @@
       font-family: var(--font-mono);
       font-size: 0.68rem;
       letter-spacing: 0.15em;
-      color: rgba(255, 255, 255, 0.5);
+      color: rgba(255, 255, 255, 0.88);
       white-space: nowrap;
+      text-shadow: 0 1px 8px rgba(0, 0, 0, 0.95);
     }
     .altimeter-label.top { top: -1.9rem; right: -0.4rem; }
     .altimeter-label.bottom { bottom: -1.9rem; right: -0.4rem; }
@@ -651,7 +664,7 @@
       opacity: 0;
       pointer-events: none !important;
       user-select: none;
-      cursor: default;
+      cursor: none;
       transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .ascent-hint-dock.visible {
@@ -692,9 +705,9 @@
       font-family: var(--font-mono);
       font-size: 0.58rem;
       letter-spacing: 0.25em;
-      color: rgba(255, 255, 255, 0.4);
+      color: rgba(255, 255, 255, 0.78);
       text-transform: uppercase;
-      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.95);
     }
     @keyframes pulseUpChevron {
       0%, 100% { transform: translateY(0); opacity: 0.7; }
@@ -713,7 +726,7 @@
       text-transform: uppercase;
       padding: 0.55rem 1.6rem;
       border-radius: 999px;
-      cursor: pointer;
+      cursor: none;
       display: inline-flex;
       align-items: center;
       gap: 0.65rem;
@@ -804,7 +817,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: space-between;
-      padding: 15vh 1.5rem 7vh;
+      padding: max(4.5rem, 6.5vh) 1.5rem 5vh;
       text-align: center;
     }
     .intro-kicker {
@@ -813,8 +826,9 @@
       letter-spacing: 0.45em;
       text-transform: uppercase;
       color: var(--accent);
-      margin-bottom: 1.4rem;
-      opacity: 0;
+      margin-bottom: 0.8rem;
+      opacity: 0.85;
+      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.95);
     }
     .intro-title {
       font-family: var(--font-display);
@@ -827,52 +841,27 @@
     .intro-title .t-main {
       font-size: clamp(2.6rem, 9.5vw, 8.6rem);
       letter-spacing: 0.04em;
-      text-shadow: 0 0 60px rgba(147, 165, 207, 0.35);
+      text-shadow: 0 0 60px rgba(147, 165, 207, 0.35), 0 2px 20px rgba(0, 0, 0, 0.95);
     }
     .intro-title .t-sub {
       font-family: var(--font-title);
-      font-weight: 400;
-      font-size: clamp(0.9rem, 2vw, 1.5rem);
-      letter-spacing: 0.9em;
-      margin-top: 1rem;
-      margin-right: -0.9em;
-      color: rgba(234, 235, 238, 0.8);
+      font-weight: 600;
+      font-size: clamp(0.95rem, 1.8vw, 1.4rem);
+      letter-spacing: 0.65em;
+      margin-top: 0.65rem;
+      margin-right: -0.65em;
+      color: #ffffff;
+      text-shadow: 0 0 20px rgba(0, 0, 0, 0.95), 0 2px 10px rgba(0, 0, 0, 0.95), 0 0 40px rgba(3, 3, 6, 0.95);
     }
     /* The title's reflection: the word, mirrored, sinking into dark water */
     .intro-mirror {
-      font-family: var(--font-display);
-      font-size: clamp(2.6rem, 9.5vw, 8.6rem);
-      letter-spacing: 0.04em;
-      line-height: 0.92;
-      text-transform: uppercase;
-      color: transparent;
-      -webkit-text-stroke: 1px rgba(147, 165, 207, 0.35);
-      transform: scaleY(-1);
-      margin-top: 0.2rem;
-      -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0.9), transparent 70%);
-      mask-image: linear-gradient(to top, rgba(0,0,0,0.9), transparent 70%);
-      opacity: 0;
-      user-select: none;
+      display: none;
     }
     .intro-foot {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 1.4rem;
-    }
-    .intro-lede {
-      font-family: var(--font-body);
-      font-weight: 300;
-      font-size: clamp(0.95rem, 1.4vw, 1.15rem);
-      line-height: 1.7;
-      color: rgba(234, 235, 238, 0.75);
-      max-width: 34rem;
-      text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
-      opacity: 0;
-    }
-    .intro-lede em {
-      font-style: italic;
-      color: #fff;
+      gap: 1.2rem;
     }
     .scroll-cue {
       display: flex;
@@ -883,8 +872,9 @@
       font-size: 0.62rem;
       letter-spacing: 0.4em;
       text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.55);
-      opacity: 0;
+      color: rgba(255, 255, 255, 0.82);
+      opacity: 0.85;
+      text-shadow: 0 1px 8px rgba(0, 0, 0, 0.95);
     }
     .cue-line {
       position: relative;
@@ -963,13 +953,14 @@
       font-family: var(--font-mono);
       font-size: 0.58rem;
       letter-spacing: 0.1em;
-      color: rgba(255, 255, 255, 0.35);
+      color: rgba(255, 255, 255, 0.65);
       padding-top: 0.15rem;
     }
     .transcript li.read {
-      opacity: 0.5;
+      opacity: 0.78;
       transform: none;
       filter: none;
+      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
     }
     .transcript li.current {
       opacity: 1;
@@ -1121,7 +1112,8 @@
       padding: 0.12rem 0;
     }
     .finale-col.fall li {
-      color: rgba(200, 210, 235, 0.5);
+      color: rgba(226, 232, 240, 0.82);
+      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
     }
     .finale-col.fly li {
       color: #fef3c7;
@@ -1165,12 +1157,17 @@
       .transcript { display: none; }
     }
 
-    /* Touch device rules: hide fake desktop kinetic cursor */
+    /* Touch device rules: hide fake desktop kinetic cursor & restore native touch cursor */
     @media (hover: none) and (pointer: coarse) {
       .cursor-dot, .cursor-ring {
         display: none !important;
       }
-      body {
+      *, *::before, *::after,
+      body,
+      button,
+      a,
+      [role="button"],
+      .interactive {
         cursor: auto !important;
       }
     }
@@ -1178,31 +1175,41 @@
     /* Responsive adjustments */
     @media (max-width: 768px) {
       .hud {
-        top: 1rem;
-        left: 1rem;
-        right: 1rem;
+        top: max(0.85rem, env(safe-area-inset-top, 0.85rem));
+        left: max(0.85rem, env(safe-area-inset-left, 0.85rem));
+        right: max(0.85rem, env(safe-area-inset-right, 0.85rem));
+        gap: 0.6rem;
+      }
+      .hud-left {
+        flex: 1 1 auto;
+        min-width: 0;
       }
       .hud-title {
-        font-size: 0.72rem;
-        letter-spacing: 0.18em;
+        font-size: 0.70rem;
+        letter-spacing: 0.16em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
       .hud-badge {
         font-size: 0.58rem;
-        letter-spacing: 0.12em;
+        letter-spacing: 0.1em;
+        white-space: nowrap;
       }
       .hud-center {
         display: none;
       }
       .hud-right {
         gap: 0.45rem;
+        flex-shrink: 0;
       }
       .hud-status-pill {
-        padding: 0.35rem 0.7rem;
+        padding: 0.35rem 0.65rem;
         font-size: 0.58rem;
         letter-spacing: 0.08em;
       }
       .hud-btn {
-        padding: 0.35rem 0.7rem;
+        padding: 0.35rem 0.65rem;
         font-size: 0.58rem;
         letter-spacing: 0.08em;
       }
@@ -1226,8 +1233,8 @@
       .ascent-hint-sub {
         font-size: 0.52rem;
       }
-      .intro { padding: 17vh 1rem 6vh; }
-      .intro-title .t-sub { letter-spacing: 0.5em; margin-right: -0.5em; }
+      .intro { padding: max(4.2rem, 8vh) 1rem 4vh; }
+      .intro-title .t-sub { letter-spacing: 0.35em; margin-right: -0.35em; font-size: 0.85rem; }
       .finale { padding: 4.5rem 1rem 2rem; }
       .finale-columns { gap: 0.9rem; }
       .finale-col .col-label { font-size: 0.5rem; letter-spacing: 0.18em; }
@@ -1246,18 +1253,52 @@
       }
     }
 
-    @media (max-width: 480px) {
-      .hud-title {
+    @media (max-width: 600px) {
+      .hud-badge .badge-sub,
+      .axis-prefix,
+      .sound-prefix {
         display: none;
       }
-      .hud-left {
-        max-width: 140px;
+      .hud-title {
+        font-size: 0.64rem;
+        letter-spacing: 0.14em;
       }
       .hud-badge {
+        font-size: 0.55rem;
+      }
+      .hud-status-pill {
+        padding: 0.32rem 0.55rem;
+        font-size: 0.55rem;
+        gap: 0.3rem;
+      }
+      .hud-btn {
+        padding: 0.32rem 0.55rem;
+        font-size: 0.55rem;
+        gap: 0.3rem;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .hud {
+        top: max(0.6rem, env(safe-area-inset-top, 0.6rem));
+        left: 0.5rem;
+        right: 0.5rem;
+        gap: 0.35rem;
+      }
+      .hud-title {
+        font-size: 0.58rem;
+        letter-spacing: 0.1em;
+      }
+      .hud-badge {
+        font-size: 0.50rem;
+      }
+      .hud-right {
+        gap: 0.3rem;
+      }
+      .hud-status-pill,
+      .hud-btn {
+        padding: 0.28rem 0.45rem;
         font-size: 0.52rem;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
       }
     }
   </style>
@@ -1301,7 +1342,6 @@
       <div class="intro-mirror" aria-hidden="true">Palindrome</div>
     </div>
     <div class="intro-foot">
-      <p class="intro-lede">Read it <em>falling</em>. Then read it <em>flying</em>.<br />The words stay. The meaning turns.</p>
       <div class="scroll-cue"><span>Scroll to fall</span><span class="cue-line"></span></div>
     </div>
   </section>
@@ -1324,17 +1364,17 @@
   <header class="hud">
     <div class="hud-left">
       <div class="hud-title">Palindrome of a Fall</div>
-      <div class="hud-badge" id="hud-mode-badge">Descent // Burnout & Collapse</div>
+      <div class="hud-badge" id="hud-mode-badge"><span class="badge-mode">Descent</span><span class="badge-sub"> // Burnout & Collapse</span></div>
     </div>
 
     <div class="hud-center">
       <div id="hud-gravity">GRAVITY: <strong>+9.81 m/s² (PULL)</strong></div>
-      <div id="hud-velocity" style="font-size: 0.65rem; color: rgba(255,255,255,0.35); margin-top: 2px;">TERMINAL VELOCITY: 0.00 M/S</div>
+      <div id="hud-velocity" style="font-size: 0.65rem; color: rgba(241, 245, 249, 0.78); text-shadow: 0 1px 4px rgba(0,0,0,0.8); margin-top: 2px;">TERMINAL VELOCITY: 0.00 M/S</div>
     </div>
 
     <div class="hud-right">
       <div class="hud-status-pill" id="hud-axis-pill" title="Current Perspective Axis">
-        <span id="invert-icon">↕</span> <span id="invert-label">AXIS // NORMAL</span>
+        <span id="invert-icon">↕</span> <span id="invert-label"><span class="axis-prefix">AXIS // </span><span class="axis-state">NORMAL</span></span>
       </div>
 
       <button class="hud-btn interactive audio-active" id="audio-toggle-btn" title="Toggle Cinematic Soundscape">
@@ -1343,7 +1383,7 @@
           <span class="sound-bar"></span>
           <span class="sound-bar"></span>
         </span>
-        <span id="audio-btn-label">SOUND: ON</span>
+        <span id="audio-btn-label"><span class="sound-prefix">SOUND: </span><span class="sound-state">ON</span></span>
       </button>
     </div>
   </header>
@@ -1359,25 +1399,25 @@
 
   <!-- Environmental Scroll Track (7 Expanded Act Chapters for a Deep Atmospheric Journey) -->
   <main class="scroll-container" id="scroll-track">
-    <!-- PHASE 01: "THEY TOLD ME..." -->
+    <!-- PHASE 01: "EVERYTHING SCATTERS INTO ASH" -->
     <section class="scene-section" data-wall="1"></section>
 
-    <!-- PHASE 02: "...THAT GRAVITY WAS LAW..." -->
+    <!-- PHASE 02: "...AND I REFUSE TO BELIEVE..." -->
     <section class="scene-section" data-wall="2"></section>
 
-    <!-- PHASE 03: "...THERE WAS NO HOPE..." -->
+    <!-- PHASE 03: "...THE SPARK OUTLIVES THE COLLAPSE..." -->
     <section class="scene-section" data-wall="3"></section>
 
-    <!-- PHASE 04: "...IN FALLING SILENCE..." -->
+    <!-- PHASE 04: "...THE DRIFT REVEALS..." -->
     <section class="scene-section" data-wall="4"></section>
 
-    <!-- PHASE 05: "...THAT I WOULD BREAK..." -->
+    <!-- PHASE 05: "...WE ARE ONLY DUST IN MOTION..." -->
     <section class="scene-section" data-wall="5"></section>
 
-    <!-- PHASE 06: "...INTO COLD SHADOWS..." -->
+    <!-- PHASE 06: "...IT IS A LIE THAT..." -->
     <section class="scene-section" data-wall="6"></section>
 
-    <!-- PHASE 07: "...BEFORE I EVER REACHED THE SKY." (MIRROR LAUNCHPAD) -->
+    <!-- PHASE 07: "...WHAT SHATTERS CAN REFORM IN LIGHT." -->
     <section class="scene-section climax-section" data-wall="7"></section>
   </main>
 

@@ -27,8 +27,9 @@ export class CanvasStoryEngine {
     // Water shockwaves
     this.shockwaves = [];
 
-    // Ambient Particles (Slipstream embers)
-    this.particleCount = 180;
+    // Ambient Particles (Slipstream stardust shedding from the boy into the background)
+    this.particleCount = 120;
+    this.initStardustSprites();
     this.particles = [];
     this.initParticles();
 
@@ -233,26 +234,63 @@ export class CanvasStoryEngine {
     }
   }
 
+  createStardustSprite(r, g, b) {
+    const size = 32;
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d");
+    const rad = size / 2;
+    // Identical soft Gaussian stardust curve as Three.js fragment shader:
+    // 1.0 - smoothstep(0.28, 0.5, dist)
+    const grad = ctx.createRadialGradient(rad, rad, 0, rad, rad, rad);
+    grad.addColorStop(0.0, `rgba(${r}, ${g}, ${b}, 1.0)`);
+    grad.addColorStop(0.35, `rgba(${r}, ${g}, ${b}, 0.82)`);
+    grad.addColorStop(0.65, `rgba(${r}, ${g}, ${b}, 0.28)`);
+    grad.addColorStop(1.0, `rgba(${r}, ${g}, ${b}, 0.0)`);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, size, size);
+    return canvas;
+  }
+
+  initStardustSprites() {
+    // Atmospheric stardust colors matching the background scenes and boy model (no artificial neon!)
+    this.descSprites = [
+      this.createStardustSprite(220, 235, 255), // Stardust silver-white
+      this.createStardustSprite(160, 195, 240), // Ethereal rain skylight
+      this.createStardustSprite(135, 170, 220), // Ambient mist blue
+      this.createStardustSprite(110, 145, 200), // Deep twilight indigo
+    ];
+    this.ascSprites = [
+      this.createStardustSprite(255, 250, 225), // Radiant white-gold
+      this.createStardustSprite(250, 215, 130), // Warm stardust gold
+      this.createStardustSprite(235, 185, 95),  // Solar amber glow
+      this.createStardustSprite(255, 235, 175), // Champagne dawn
+    ];
+  }
+
   initParticles() {
     this.particles = [];
     for (let i = 0; i < this.particleCount; i++) {
-      // Spread across the boy's entire freefall body (-170px shoes to +160px hair)
-      const bodyX = (Math.random() - 0.5) * 340;
+      // Spawn along the boy's body silhouette
+      const bodyX = (Math.random() - 0.5) * 280;
       const bodyY =
-        Math.sin((bodyX / 170) * 1.5) * 20 + (Math.random() - 0.5) * 45;
+        Math.sin((bodyX / 140) * 1.5) * 18 + (Math.random() - 0.5) * 35;
       this.particles.push({
         x: bodyX,
         y: bodyY,
         baseX: bodyX,
         baseY: bodyY,
-        vx: (Math.random() - 0.5) * 2.2,
-        vy: 1.2 + Math.random() * 2.8,
-        size: 1.6 + Math.random() * 2.2,
+        vx: (Math.random() - 0.5) * 1.4,
+        vy: 0.8 + Math.random() * 2.2,
+        size: 1.8 + Math.random() * 2.2, // 1.8px - 4.0px radius: exact background stardust scale
         life: Math.random(),
-        maxLife: 0.6 + Math.random() * 0.8,
-        speed: 0.007 + Math.random() * 0.015,
+        maxLife: 0.8 + Math.random() * 0.9,
+        speed: 0.005 + Math.random() * 0.012,
         wingT: Math.random(),
         side: Math.random() < 0.5 ? -1 : 1,
+        seed: Math.random() * 6.28,
+        spriteIdx: i % 4,
       });
     }
   }
@@ -327,7 +365,7 @@ export class CanvasStoryEngine {
     const isTouchLayout = this.width <= 768;
     const figX = this.width * 0.5 + (isTouchLayout ? 0 : this.mouse.normX * 18);
     const figY =
-      this.height * 0.48 + (isTouchLayout ? 0 : Math.sin(time * 1.5) * 6);
+      this.height * 0.52 + (isTouchLayout ? 0 : Math.sin(time * 1.5) * 6);
 
     this.particleImageEngine.update(
       time,
@@ -449,7 +487,7 @@ export class CanvasStoryEngine {
     // Boy's screen focal center for wake collision & focal drift
     const isTouchLayout = w <= 768;
     const figX = w * 0.5 + (isTouchLayout ? 0 : this.mouse.normX * 18);
-    const figY = h * 0.48 + (isTouchLayout ? 0 : Math.sin(t * 1.5) * 6);
+    const figY = h * 0.52 + (isTouchLayout ? 0 : Math.sin(t * 1.5) * 6);
 
     // 3. High-Speed Vertical Slipstream Streaks (Clean editorial motion)
     this.renderSlipstreamStreaks(ctx, w, h, truth);
@@ -460,10 +498,10 @@ export class CanvasStoryEngine {
     // 4. Distant Brutalist Monolith Pillars (Multi-layered atmospheric architecture)
     this.renderMonoliths(ctx, w, h, p, truth, t, false);
 
-    // 5. Full-Screen Image-to-Particles Scene (Rendered BEHIND the text boxes so poetry cards are pristine and legible)
-    this.particleImageEngine.render(ctx, w, h, truth);
+    // 5. Full-Screen Image-to-Particles Scene (Background stardust art rendered behind text cards)
+    this.particleImageEngine.renderBackground(ctx, w, h, truth);
 
-    // 6. 7 Monumental Environmental Chapters with Chiseled Poetry (Text boxes / slabs rendered ABOVE the particles)
+    // 6. 7 Monumental Environmental Chapters with Chiseled Poetry (Text boxes / slabs rendered BEHIND the boy)
     this.renderFracturingWalls(ctx, w, h, p, truth);
 
     // 7. Near-Field Foreground Monoliths (Framing the descent)
@@ -472,7 +510,10 @@ export class CanvasStoryEngine {
     // 8. Water Mirror Floor at 100% descent
     this.renderWaterMirror(ctx, w, h, p, truth, figX);
 
-    // 9. Flying Debris & Stone Dust
+    // 8b. The Hero Boy Stardust Model (Rendered ON TOP OF the text cards so he flies/falls in front of them)
+    this.particleImageEngine.renderBoy(ctx, w, h, truth);
+
+    // 9. Flying Debris & Stone Dust (Fracturing outward from impacts across the boy)
     this.renderDebris(ctx);
 
     // 10. Dynamic Slipstream Particles on the Boy
@@ -489,11 +530,14 @@ export class CanvasStoryEngine {
       this.flash *= 0.9;
     }
 
+    // 13. Telemetry HUD (Rendered crisp and clear on top of all canvas passes)
+    this.particleImageEngine.renderTelemetry(ctx, w, h, truth);
+
     ctx.restore();
   }
 
   renderActNumerals(ctx, w, h, p, truth) {
-    const boyY = h * 0.48;
+    const boyY = h * 0.52;
     const totalTravel = h * 11.0;
     const size = Math.min(w * 0.42, h * 0.62);
 
@@ -574,7 +618,7 @@ export class CanvasStoryEngine {
   }
 
   renderMonoliths(ctx, w, h, p, truth, t, isForeground) {
-    const boyY = h * 0.48;
+    const boyY = h * 0.52;
     const totalTravel = h * 11.0;
 
     ctx.save();
@@ -653,9 +697,12 @@ export class CanvasStoryEngine {
         ctx.letterSpacing = "0.2em";
         ctx.fillStyle =
           truth > 0.05
-            ? "rgba(251, 191, 36, 0.4)"
-            : "rgba(255, 255, 255, 0.22)";
+            ? "rgba(251, 191, 36, 0.85)"
+            : "rgba(241, 245, 249, 0.75)";
+        ctx.shadowColor = "rgba(0, 0, 0, 0.9)";
+        ctx.shadowBlur = 4;
         ctx.fillText(label, 0, -m.height / 2 + 22);
+        ctx.shadowBlur = 0;
       }
 
       ctx.restore();
@@ -664,7 +711,7 @@ export class CanvasStoryEngine {
   }
 
   renderFracturingWalls(ctx, w, h, p, truth) {
-    const boyY = h * 0.48; // Boy's screen position
+    const boyY = h * 0.52; // Boy's screen position
     const totalTravel = h * 11.0; // Paced cinematic scroll journey for 7 chapters
 
     this.walls.forEach((wall) => {
@@ -676,25 +723,29 @@ export class CanvasStoryEngine {
 
       const wallCenterX = w * 0.5 + wall.side * w + this.mouse.normX * 10;
 
-      // Distance from boy (0 = direct physical impact)
-      const distFromBoy = wallScreenY - boyY;
+      // Physical impact boundary:
+      // The box rises from below as the boy falls down.
+      // Impact begins when the top edge of the box reaches the boy's lower body (a little below center),
+      // so the slab fractures upon first contact rather than waiting until the boy reaches the middle of the box.
+      const impactOffset = wall.height * 0.48 + 25;
+      const distFromBoy = (wallScreenY - impactOffset) - boyY;
 
       // Shatter factor:
-      // ZERO before touching! Only begins the instant the boy physically hits the wall (distFromBoy <= 0)
+      // ZERO before touching! Begins the instant the boy's lower body strikes the top boundary of the wall
       let shatter = 0;
       if (distFromBoy <= 0) {
         shatter = Math.min(1.0, -distFromBoy / 220);
         shatter = Math.pow(shatter, 1.4); // accelerates outward upon collision
       }
 
-      // Sound & debris on impact: triggers exactly when boy contacts the wall
-      if (distFromBoy <= 0 && distFromBoy >= -35 && !wall.hasTriggeredCrack) {
+      // Sound & debris on impact: triggers exactly when boy makes first contact with the wall
+      if (distFromBoy <= 0 && distFromBoy >= -45 && !wall.hasTriggeredCrack) {
         wall.hasTriggeredCrack = true;
-        this.spawnDebris(wallCenterX, boyY, 22);
+        this.spawnDebris(wallCenterX, boyY + 30, 24);
         if (!this.reduceMotion) this.shake = Math.max(this.shake, 0.55);
         this.particleImageEngine.pulse(0.35);
         if (this.onWallHit) this.onWallHit(wall);
-      } else if (distFromBoy > 50 && wall.hasTriggeredCrack) {
+      } else if (distFromBoy > 60 && wall.hasTriggeredCrack) {
         wall.hasTriggeredCrack = false;
       }
 
@@ -760,16 +811,22 @@ export class CanvasStoryEngine {
         ctx.letterSpacing = "0.3em";
         ctx.fillStyle =
           truth > 0.05
-            ? "rgba(251, 191, 36, 0.7)"
-            : "rgba(147, 165, 207, 0.65)";
+            ? "rgba(253, 224, 71, 0.95)"
+            : "rgba(186, 215, 255, 0.92)";
+        ctx.shadowColor = "rgba(0, 0, 0, 0.95)";
+        ctx.shadowBlur = 6;
         ctx.fillText(subText, 0, -wall.height * 0.24);
+        ctx.shadowBlur = 0;
 
         ctx.font = `700 ${wall.targetFontSize}px "Cinzel", serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.letterSpacing = "0.03em";
         ctx.fillStyle = truth > 0.05 ? "#fef08a" : "#ffffff";
+        ctx.shadowColor = "rgba(0, 0, 0, 0.95)";
+        ctx.shadowBlur = 12;
         ctx.fillText(wall.text, 0, wall.height * 0.1);
+        ctx.shadowBlur = 0;
 
         if (truth > 0.05) {
           ctx.strokeStyle = `rgba(251, 191, 36, ${truth * 0.35})`;
@@ -853,9 +910,12 @@ export class CanvasStoryEngine {
         ctx.letterSpacing = "0.3em";
         ctx.fillStyle =
           truth > 0.05
-            ? "rgba(251, 191, 36, 0.7)"
-            : "rgba(147, 165, 207, 0.65)";
+            ? "rgba(253, 224, 71, 0.95)"
+            : "rgba(186, 215, 255, 0.92)";
+        ctx.shadowColor = "rgba(0, 0, 0, 0.95)";
+        ctx.shadowBlur = 6;
         ctx.fillText(subText, 0, -wall.height * 0.24);
+        ctx.shadowBlur = 0;
 
         // 4. Primary Chiseled Poetry Text (Precomputed size, no measureText)
         ctx.font = `700 ${wall.targetFontSize}px "Cinzel", serif`;
@@ -863,7 +923,10 @@ export class CanvasStoryEngine {
         ctx.textBaseline = "middle";
         ctx.letterSpacing = "0.03em";
         ctx.fillStyle = truth > 0.05 ? "#fef08a" : "#ffffff";
+        ctx.shadowColor = "rgba(0, 0, 0, 0.95)";
+        ctx.shadowBlur = 12;
         ctx.fillText(wall.text, 0, wall.height * 0.1);
+        ctx.shadowBlur = 0;
 
         ctx.restore(); // Undo chunk clip & transform
 
@@ -934,38 +997,34 @@ export class CanvasStoryEngine {
     if (waterAlpha <= 0.01) return;
 
     ctx.save();
-    const waterY = h * 0.82;
+    // Lowered to the very bottom floor to prevent cutting through the character
+    const waterY = h * 0.94;
 
+    // Soft organic fade without harsh rectangular edges
     const waterGrad = ctx.createLinearGradient(0, waterY, 0, h);
     if (truth > 0.01) {
-      waterGrad.addColorStop(0, `rgba(251, 191, 36, ${waterAlpha * 0.32})`);
-      waterGrad.addColorStop(1, `rgba(160, 75, 8, ${waterAlpha * 0.8})`);
+      waterGrad.addColorStop(0, `rgba(251, 191, 36, 0)`);
+      waterGrad.addColorStop(0.3, `rgba(251, 191, 36, ${waterAlpha * 0.12})`);
+      waterGrad.addColorStop(1, `rgba(160, 75, 8, ${waterAlpha * 0.3})`);
     } else {
-      waterGrad.addColorStop(0, `rgba(147, 185, 235, ${waterAlpha * 0.25})`);
-      waterGrad.addColorStop(1, `rgba(6, 10, 20, ${waterAlpha * 0.95})`);
+      waterGrad.addColorStop(0, `rgba(147, 185, 235, 0)`);
+      waterGrad.addColorStop(0.3, `rgba(147, 185, 235, ${waterAlpha * 0.08})`);
+      waterGrad.addColorStop(1, `rgba(6, 10, 20, ${waterAlpha * 0.45})`);
     }
     ctx.fillStyle = waterGrad;
     ctx.fillRect(0, waterY, w, h - waterY);
 
-    ctx.strokeStyle =
-      truth > 0.01
-        ? `rgba(251, 191, 36, ${waterAlpha * 0.7})`
-        : `rgba(255, 255, 255, ${waterAlpha * 0.4})`;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(0, waterY);
-    ctx.lineTo(w, waterY);
-    ctx.stroke();
-
+    // Subtle bedrock impact ripples
     for (let i = 0; i < 3; i++) {
       const r = (this.time * 24 + i * 45) % 190;
-      const rAlpha = Math.max(0, (1 - r / 190) * waterAlpha * 0.35);
+      const rAlpha = Math.max(0, (1 - r / 190) * waterAlpha * 0.25);
       ctx.strokeStyle =
         truth > 0.01
           ? `rgba(251, 191, 36, ${rAlpha})`
           : `rgba(200, 225, 255, ${rAlpha})`;
+      ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.ellipse(w / 2, waterY + 22, r * 1.7, r * 0.24, 0, 0, Math.PI * 2);
+      ctx.ellipse(w / 2, waterY + 12, r * 1.7, r * 0.24, 0, 0, Math.PI * 2);
       ctx.stroke();
     }
 
@@ -1004,48 +1063,51 @@ export class CanvasStoryEngine {
       p.life += p.speed;
       if (p.life > p.maxLife) {
         p.life = 0;
-        // Re-spawn spread widely across the boy's freefall body (-170px to +160px)
-        const bodyX = (Math.random() - 0.5) * 340;
+        // Re-spawn along the boy's body silhouette
+        const bodyX = (Math.random() - 0.5) * 280;
         const bodyY =
-          Math.sin((bodyX / 170) * 1.5) * 20 + (Math.random() - 0.5) * 45;
+          Math.sin((bodyX / 140) * 1.5) * 18 + (Math.random() - 0.5) * 35;
         p.x = bodyX;
         p.y = bodyY;
-        p.vx = (Math.random() - 0.5) * 2.2;
+        p.vx = (Math.random() - 0.5) * 1.4;
       }
 
-      let drawX, drawY, color, alpha;
-      const descColors = ["#00f0ff", "#38bdf8", "#7dd3fc", "#e0f2fe"];
-      const ascColors = ["#fbbf24", "#ffd700", "#f59e0b", "#fffbeb"];
+      let drawX, drawY, sprite, alpha;
+      const progress = Math.min(1, Math.max(0, p.life / p.maxLife));
 
       if (truth > 0.5) {
-        const span = 40 + p.wingT * 180;
-        const arch = Math.sin(p.wingT * Math.PI * 0.85) * 75;
+        // Ascent: Golden embers stream downward from the wings into the slipstream below
+        const span = 60 + p.wingT * 260;
+        const arch = Math.sin(p.wingT * Math.PI * 0.85) * 85;
         const flapOffset = Math.sin(t * 3.2 + p.wingT * 2.0) * 16;
 
-        drawX = figX + p.side * span + Math.sin(t * 5 + i) * 6;
-        drawY = figY - 20 - arch + flapOffset + p.y * 0.5;
+        p.y += p.vy * 0.55;
+        p.x += Math.sin(t * 2.5 + p.seed) * 0.7;
 
-        color = ascColors[i % ascColors.length];
-        alpha = Math.sin((p.life / p.maxLife) * Math.PI) * 0.85 * truth;
+        drawX = figX + p.side * span + p.x * 0.35;
+        drawY = figY - 20 - arch + flapOffset + p.y;
+
+        sprite = this.ascSprites[p.spriteIdx];
+        alpha = Math.sin(progress * Math.PI) * (1.0 - progress * 0.35) * 0.65;
       } else {
-        // Disperse outward and float upward in the wake of the fall
-        p.y -= p.vy * 0.9;
-        p.x += p.vx + Math.sin(t * 2.2 + i * 0.4) * 0.9;
+        // Descent: Fine stardust embers shed from the boy's body and float upward in the slipstream
+        p.y -= p.vy * 0.8;
+        p.x += p.vx + Math.sin(t * 1.8 + p.seed) * 0.65;
 
         drawX = figX + p.x;
         drawY = figY + p.y;
 
-        color = descColors[i % descColors.length];
-        // Smooth sine fade-in and fade-out matching background stardust
-        const progress = Math.min(1, Math.max(0, p.life / p.maxLife));
-        alpha = Math.sin(progress * Math.PI) * 0.75;
+        sprite = this.descSprites[p.spriteIdx];
+        // Bell-curve fade matching the background stardust shimmer
+        alpha = Math.sin(progress * Math.PI) * (1.0 - progress * 0.3) * 0.55;
       }
 
-      ctx.fillStyle = color;
+      if (alpha <= 0.01) continue;
+
       ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
-      ctx.beginPath();
-      ctx.arc(drawX, drawY, p.size, 0, Math.PI * 2);
-      ctx.fill();
+      const s = p.size;
+      // Draw pre-rendered soft Gaussian stardust disc (identical to WebGL stardust)
+      ctx.drawImage(sprite, drawX - s, drawY - s, s * 2, s * 2);
     }
 
     ctx.globalAlpha = 1.0;

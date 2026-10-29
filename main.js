@@ -4,7 +4,6 @@ import Lenis from "lenis";
 import "lenis/dist/lenis.css";
 
 import { CanvasStoryEngine } from "./src/canvas2d.js";
-import { getCharacterSvgMarkup } from "./src/characterSvg.js";
 import { SoundDesign } from "./src/audio.js";
 import { POEM, ROMAN, capitalise } from "./src/poem.js";
 
@@ -27,7 +26,8 @@ const state = {
 // ==========================================
 // LENIS SMOOTH SCROLL ENGINE INITIALIZATION
 // ==========================================
-const isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+const isTouchDevice =
+  window.matchMedia("(hover: none) and (pointer: coarse)").matches;
 
 const lenis = new Lenis({
   lerp: reduceMotion ? 1 : isTouchDevice ? 0.08 : 0.05, // Natural fluid momentum on touch & desktop
@@ -194,7 +194,11 @@ let audioStarted = false;
 
 function setAudioUI(on) {
   audioBtn.classList.toggle("audio-active", on);
-  audioBtnLabel.textContent = on ? "SOUND: ON" : "SOUND: OFF";
+  if (audioBtnLabel) {
+    audioBtnLabel.innerHTML = on
+      ? '<span class="sound-prefix">SOUND: </span><span class="sound-state">ON</span>'
+      : '<span class="sound-prefix">SOUND: </span><span class="sound-state">OFF</span>';
+  }
 }
 setAudioUI(true);
 
@@ -280,10 +284,10 @@ storyEngine.onWallHit = () => {
   sound.playStoneCrack();
 };
 
-// Inject Hero Freefall Character Illustration
+// Character is now rendered natively as 28,000 GPU stardust particles inside Three.js
 const charContainer = document.getElementById("character-container");
 if (charContainer) {
-  charContainer.innerHTML = getCharacterSvgMarkup();
+  charContainer.innerHTML = "";
 }
 
 // ==========================================
@@ -424,18 +428,30 @@ function applyAscentModeUI(isAscent) {
   if (isAscent) {
     document.body.classList.add("ascent-mode");
     if (ascentHintDock) ascentHintDock.classList.remove("visible");
-    if (hudBadge) hudBadge.textContent = "Ascent // Defiance & Wings Ignited";
+    if (hudBadge) {
+      hudBadge.innerHTML =
+        '<span class="badge-mode">Ascent</span><span class="badge-sub"> // Defiance & Wings Ignited</span>';
+    }
     if (hudGravity)
       hudGravity.innerHTML =
         'GRAVITY: <strong style="color: #fbbf24;">-19.6 m/s² (ZERO-G THRUST)</strong>';
-    if (invertLabel) invertLabel.textContent = "AXIS // INVERTED";
+    if (invertLabel) {
+      invertLabel.innerHTML =
+        '<span class="axis-prefix">AXIS // </span><span class="axis-state">INVERTED</span>';
+    }
     if (transcriptLabel) transcriptLabel.textContent = "Reading flying";
   } else {
     document.body.classList.remove("ascent-mode");
-    if (hudBadge) hudBadge.textContent = "Descent // Burnout & Collapse";
+    if (hudBadge) {
+      hudBadge.innerHTML =
+        '<span class="badge-mode">Descent</span><span class="badge-sub"> // Burnout & Collapse</span>';
+    }
     if (hudGravity)
       hudGravity.innerHTML = "GRAVITY: <strong>+9.81 m/s² (PULL)</strong>";
-    if (invertLabel) invertLabel.textContent = "AXIS // NORMAL";
+    if (invertLabel) {
+      invertLabel.innerHTML =
+        '<span class="axis-prefix">AXIS // </span><span class="axis-state">NORMAL</span>';
+    }
     if (transcriptLabel) transcriptLabel.textContent = "Reading falling";
   }
 }
