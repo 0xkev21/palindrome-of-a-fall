@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { BoyParticleHalo } from "./boyParticleHalo.js";
 
 /**
  * Three.js GPU Particle Image Engine
@@ -14,9 +15,9 @@ import * as THREE from "three";
 
 export class ParticleImageEngine {
   constructor() {
-    this.gridX = 320;
-    this.gridY = 180;
-    this.particleCount = this.gridX * this.gridY; // 57,600 stardust points (exact 16:9 grid)
+    this.gridX = 260;
+    this.gridY = 146;
+    this.particleCount = this.gridX * this.gridY; // ~38,000 stardust points (exact 16:9 grid)
 
     this.scenes = [
       {
@@ -96,6 +97,14 @@ export class ParticleImageEngine {
       if (this.onLoadProgress) this.onLoadProgress(this.loadProgress);
     };
     this.loadManager.onLoad = () => {
+      // Pre-warm and initialize all textures on the GPU to prevent any lag/stalls when switching modes
+      Object.values(this.textures).forEach((tex) => {
+        if (tex && this.renderer) {
+          try {
+            this.renderer.initTexture(tex);
+          } catch (_) {}
+        }
+      });
       this.loadProgress = 1;
       if (this.onLoadProgress) this.onLoadProgress(1);
       this.resolveReady();
@@ -127,6 +136,7 @@ export class ParticleImageEngine {
 
     // Build Point Cloud Geometry & Shader Material
     this.initPointCloud();
+    this.boyParticleHalo = new BoyParticleHalo(this.scene);
 
     this.currentActIdx = 0;
     this.nextActIdx = 0;
@@ -404,6 +414,15 @@ export class ParticleImageEngine {
     this.uniforms.uResolution.value.set(w, h);
     this.uniforms.uGlobalAlpha.value = 0.92;
     this.uniforms.uMotion.value = this.motionScale;
+    this.boyParticleHalo.update(
+      performance.now() * 0.001,
+      scrollVelocity,
+      truth,
+      w,
+      h,
+      boyX,
+      boyY,
+    );
 
     const waveT =
       this.waveStart < 0 ? -1 : (performance.now() - this.waveStart) * 0.001;

@@ -462,9 +462,7 @@ function setAscentMode(isAscent) {
   });
 
   if (isAscent) {
-    storyEngine.triggerImpact();
     playInversion();
-    sound.playImpact();
     setTimeout(() => sound.playAscentChord(), 450);
   } else {
     sound.playChime(330, 0.1, 1.5);

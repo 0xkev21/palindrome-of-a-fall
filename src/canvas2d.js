@@ -15,7 +15,7 @@ export class CanvasStoryEngine {
     this.reduceMotion = reduceMotion;
     this.width = window.innerWidth;
     this.height = window.innerHeight;
-    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+    this.dpr = Math.min(window.devicePixelRatio || 1, 1.5);
 
     this.time = 0;
     this.scrollProgress = 0;
@@ -59,6 +59,7 @@ export class CanvasStoryEngine {
     // (reduced motion keeps the artwork but stops the ambient flutter/scatter)
     this.particleImageEngine.motionScale = this.reduceMotion ? 0 : 1;
 
+
     // 7 Expanded Monumental Environmental Walls with Chiseled Poetry
     this.walls = [];
     this.initWalls();
@@ -81,7 +82,7 @@ export class CanvasStoryEngine {
   resize() {
     this.width = window.innerWidth;
     this.height = window.innerHeight;
-    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+    this.dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     this.canvas.width = Math.round(this.width * this.dpr);
     this.canvas.height = Math.round(this.height * this.dpr);
     this.ctx.scale(this.dpr, this.dpr);
@@ -182,12 +183,38 @@ export class CanvasStoryEngine {
         }
       }
 
+      // Precompute typography metrics once on layout instead of per-frame in RAF
+      const maxTextW = slabW - 70;
+      let subSize = Math.round(Math.min(12, Math.max(9, slabW * 0.014)));
+      this.ctx.font = `700 ${subSize}px "Space Mono", monospace`;
+      let mSub = this.ctx.measureText(def.sub).width;
+      if (mSub > maxTextW) {
+        subSize = Math.max(8, Math.floor(subSize * (maxTextW / mSub)));
+      }
+
+      let subAscSize = Math.round(Math.min(12, Math.max(9, slabW * 0.014)));
+      this.ctx.font = `700 ${subAscSize}px "Space Mono", monospace`;
+      let mSubAsc = this.ctx.measureText(def.subAsc).width;
+      if (mSubAsc > maxTextW) {
+        subAscSize = Math.max(8, Math.floor(subAscSize * (maxTextW / mSubAsc)));
+      }
+
+      let targetFontSize = Math.round(Math.min(42, Math.max(20, slabW * 0.046)));
+      this.ctx.font = `700 ${targetFontSize}px "Cinzel", serif`;
+      let mHeadline = this.ctx.measureText(def.text).width;
+      if (mHeadline > maxTextW) {
+        targetFontSize = Math.max(14, Math.floor(targetFontSize * (maxTextW / mHeadline)));
+      }
+
       return {
         ...def,
         width: slabW,
         height: slabH,
         chunks,
         hasTriggeredCrack: false,
+        subSize,
+        subAscSize,
+        targetFontSize,
       };
     });
   }
@@ -430,17 +457,17 @@ export class CanvasStoryEngine {
     // 4. Distant Brutalist Monolith Pillars (Multi-layered atmospheric architecture)
     this.renderMonoliths(ctx, w, h, p, truth, t, false);
 
-    // 5. 7 Monumental Environmental Chapters with Chiseled Poetry (Text boxes / slabs in environment)
-    this.renderFracturingWalls(ctx, w, h, p, truth);
-
-    // 6. Near-Field Foreground Monoliths (Framing the descent)
-    this.renderMonoliths(ctx, w, h, p, truth, t, true);
-
-    // 7. Full-Screen Image-to-Particles Scene (Rendered ABOVE the text boxes so particles are completely visible!)
+    // 5. Full-Screen Image-to-Particles Scene (Rendered BEHIND the text boxes so poetry cards are pristine and legible)
     this.particleImageEngine.render(ctx, w, h, truth);
 
+    // 6. 7 Monumental Environmental Chapters with Chiseled Poetry (Text boxes / slabs rendered ABOVE the particles)
+    this.renderFracturingWalls(ctx, w, h, p, truth);
+
+    // 7. Near-Field Foreground Monoliths (Framing the descent)
+    this.renderMonoliths(ctx, w, h, p, truth, t, true);
+
     // 8. Water Mirror Floor at 100% descent
-    this.renderWaterMirror(ctx, w, h, p, truth);
+    this.renderWaterMirror(ctx, w, h, p, truth, figX);
 
     // 9. Flying Debris & Stone Dust
     this.renderDebris(ctx);
@@ -504,9 +531,8 @@ export class CanvasStoryEngine {
     ctx.translate(cx, cy);
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.shadowColor = "rgba(251, 191, 36, 0.9)";
-    ctx.shadowBlur = 14;
 
+    // Fast 2-pass stroke glow instead of expensive CPU-bound ctx.shadowBlur
     for (const crack of this.cracks) {
       const local = Math.max(
         0,
@@ -517,8 +543,6 @@ export class CanvasStoryEngine {
       const segs = crack.pts.length - 1;
       const reach = eased * segs;
 
-      ctx.strokeStyle = `rgba(254, 222, 120, ${0.85 * fade})`;
-      ctx.lineWidth = crack.width;
       ctx.beginPath();
       ctx.moveTo(0, 0);
       for (let i = 1; i <= segs; i++) {
@@ -532,6 +556,15 @@ export class CanvasStoryEngine {
           break;
         }
       }
+
+      // Outer soft glow
+      ctx.strokeStyle = `rgba(251, 191, 36, ${0.28 * fade})`;
+      ctx.lineWidth = crack.width * 3.5;
+      ctx.stroke();
+
+      // Sharp golden core
+      ctx.strokeStyle = `rgba(254, 240, 138, ${0.9 * fade})`;
+      ctx.lineWidth = crack.width;
       ctx.stroke();
     }
     ctx.restore();
@@ -678,6 +711,78 @@ export class CanvasStoryEngine {
       ctx.globalAlpha = wallAlpha;
       ctx.translate(wallCenterX, wallScreenY);
 
+      const subText = truth > 0.05 ? wall.subAsc : wall.sub;
+      const subSize = truth > 0.05 ? wall.subAscSize : wall.subSize;
+
+      // FAST PATH: If the wall is unbroken or fully healed by kintsugi, render in a single pass!
+      if (shatter < 0.005) {
+        const slabGrad = ctx.createLinearGradient(
+          -wall.width / 2,
+          -wall.height / 2,
+          wall.width / 2,
+          wall.height / 2,
+        );
+        if (truth > 0.05) {
+          slabGrad.addColorStop(0, "#2a2218");
+          slabGrad.addColorStop(0.5, "#1e1810");
+          slabGrad.addColorStop(1, "#140f0a");
+        } else {
+          slabGrad.addColorStop(0, "#1c1f26");
+          slabGrad.addColorStop(0.5, "#15171d");
+          slabGrad.addColorStop(1, "#0e1014");
+        }
+        ctx.fillStyle = slabGrad;
+        ctx.fillRect(
+          -wall.width / 2,
+          -wall.height / 2,
+          wall.width,
+          wall.height,
+        );
+
+        ctx.strokeStyle =
+          truth > 0.05
+            ? "rgba(251, 191, 36, 0.2)"
+            : "rgba(255, 255, 255, 0.08)";
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(
+          -wall.width / 2 + 14,
+          -wall.height / 2 + 14,
+          wall.width - 28,
+          wall.height - 28,
+        );
+
+        ctx.font = `700 ${subSize}px "Space Mono", monospace`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.letterSpacing = "0.3em";
+        ctx.fillStyle =
+          truth > 0.05
+            ? "rgba(251, 191, 36, 0.7)"
+            : "rgba(147, 165, 207, 0.65)";
+        ctx.fillText(subText, 0, -wall.height * 0.24);
+
+        ctx.font = `700 ${wall.targetFontSize}px "Cinzel", serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.letterSpacing = "0.03em";
+        ctx.fillStyle = truth > 0.05 ? "#fef08a" : "#ffffff";
+        ctx.fillText(wall.text, 0, wall.height * 0.1);
+
+        if (truth > 0.05) {
+          ctx.strokeStyle = `rgba(251, 191, 36, ${truth * 0.35})`;
+          ctx.lineWidth = 1.2;
+          ctx.strokeRect(
+            -wall.width / 2,
+            -wall.height / 2,
+            wall.width,
+            wall.height,
+          );
+        }
+
+        ctx.restore();
+        return;
+      }
+
       // Render each fractured chunk of the stone slab
       wall.chunks.forEach((chunk) => {
         ctx.save();
@@ -738,59 +843,24 @@ export class CanvasStoryEngine {
           wall.height - 28,
         );
 
-        // Maximum available width inside the architectural slab box
-        const maxTextW = wall.width - 70;
-
-        // 3. Subtitle Chiseled into Stone (Fitted cleanly)
-        let subSize = Math.round(Math.min(12, Math.max(9, wall.width * 0.014)));
+        // 3. Subtitle Chiseled into Stone (Precomputed size, no measureText)
         ctx.font = `700 ${subSize}px "Space Mono", monospace`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.letterSpacing = "0.3em";
-        const subText = truth > 0.05 ? wall.subAsc : wall.sub;
-        const measuredSubW = ctx.measureText(subText).width;
-
-        if (measuredSubW > maxTextW) {
-          subSize = Math.max(
-            8,
-            Math.floor(subSize * (maxTextW / measuredSubW)),
-          );
-          ctx.font = `700 ${subSize}px "Space Mono", monospace`;
-        }
         ctx.fillStyle =
           truth > 0.05
             ? "rgba(251, 191, 36, 0.7)"
             : "rgba(147, 165, 207, 0.65)";
         ctx.fillText(subText, 0, -wall.height * 0.24);
 
-        // 4. Primary Chiseled Poetry Text — identical in both modes (it's a palindrome)
-        const displayText = wall.text;
-        let targetFontSize = Math.round(
-          Math.min(42, Math.max(20, wall.width * 0.046)),
-        );
-        ctx.font = `700 ${targetFontSize}px "Cinzel", serif`;
+        // 4. Primary Chiseled Poetry Text (Precomputed size, no measureText)
+        ctx.font = `700 ${wall.targetFontSize}px "Cinzel", serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.letterSpacing = "0.03em";
-
-        // Measure text and automatically scale down so it never spills outside the slab box!
-        const measuredHeadlineW = ctx.measureText(displayText).width;
-        if (measuredHeadlineW > maxTextW) {
-          targetFontSize = Math.floor(
-            targetFontSize * (maxTextW / measuredHeadlineW),
-          );
-          ctx.font = `700 ${Math.max(14, targetFontSize)}px "Cinzel", serif`;
-        }
-
-        if (truth > 0.05) {
-          // Ascent Mode: Golden Sunlight Glow on stone
-          ctx.fillStyle = "#fef08a";
-          ctx.fillText(displayText, 0, wall.height * 0.1);
-        } else {
-          // Descent Mode: High-fashion silver-white chiseled in relief
-          ctx.fillStyle = "#ffffff";
-          ctx.fillText(displayText, 0, wall.height * 0.1);
-        }
+        ctx.fillStyle = truth > 0.05 ? "#fef08a" : "#ffffff";
+        ctx.fillText(wall.text, 0, wall.height * 0.1);
 
         ctx.restore(); // Undo chunk clip & transform
 
@@ -856,7 +926,7 @@ export class CanvasStoryEngine {
     ctx.restore();
   }
 
-  renderWaterMirror(ctx, w, h, p, truth) {
+  renderWaterMirror(ctx, w, h, p, truth, figX) {
     const waterAlpha = Math.max(0, Math.min(1, (p - 0.75) / 0.2));
     if (waterAlpha <= 0.01) return;
 
