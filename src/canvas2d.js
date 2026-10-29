@@ -1,4 +1,5 @@
-import { ParticleImageEngine } from './particleImageEngine.js';
+import { ParticleImageEngine } from "./particleImageEngine.js";
+import { POEM, ROMAN } from "./poem.js";
 
 /**
  * 2D Canvas Cinematic Story Engine
@@ -10,7 +11,7 @@ import { ParticleImageEngine } from './particleImageEngine.js';
 export class CanvasStoryEngine {
   constructor(canvas, { reduceMotion = false } = {}) {
     this.canvas = canvas;
-    this.ctx = canvas.getContext('2d', { alpha: false });
+    this.ctx = canvas.getContext("2d", { alpha: false });
     this.reduceMotion = reduceMotion;
     this.width = window.innerWidth;
     this.height = window.innerHeight;
@@ -37,6 +38,14 @@ export class CanvasStoryEngine {
     // Sound callback
     this.onWallHit = null;
 
+    // Camera shake (wall impacts), full-frame flash and kintsugi crack burst (inversion)
+    this.shake = 0;
+    this.shakeX = 0;
+    this.shakeY = 0;
+    this.flash = 0;
+    this.cracks = [];
+    this.crackStart = -1;
+
     // Procedural Speed Streaks (Replacing clouds with high-speed vertical slipstream lines)
     this.streaks = [];
     this.initSlipstream();
@@ -55,13 +64,13 @@ export class CanvasStoryEngine {
     this.initWalls();
 
     this.resize();
-    window.addEventListener('resize', () => {
+    window.addEventListener("resize", () => {
       this.resize();
       this.initWalls();
       this.initMonoliths();
       this.initSlipstream();
     });
-    window.addEventListener('mousemove', (e) => {
+    window.addEventListener("mousemove", (e) => {
       this.mouse.x = e.clientX;
       this.mouse.y = e.clientY;
       this.mouse.normX = (e.clientX / this.width) * 2 - 1;
@@ -96,7 +105,7 @@ export class CanvasStoryEngine {
         side,
         lateralDist,
         tilt: (Math.random() - 0.5) * 0.12,
-        rotSpeed: (Math.random() - 0.5) * 0.03
+        rotSpeed: (Math.random() - 0.5) * 0.03,
       });
     }
   }
@@ -104,61 +113,23 @@ export class CanvasStoryEngine {
   initWalls() {
     const w = this.width;
     const isMobile = w < 640;
-    const slabW = isMobile ? Math.min(460, Math.max(280, w * 0.90)) : Math.min(980, Math.max(360, w * 0.82));
-    const slabH = isMobile ? Math.min(185, Math.max(130, slabW * 0.28)) : Math.min(210, Math.max(165, slabW * 0.22));
+    const slabW = isMobile
+      ? Math.min(460, Math.max(280, w * 0.9))
+      : Math.min(980, Math.max(360, w * 0.82));
+    const slabH = isMobile
+      ? Math.min(185, Math.max(130, slabW * 0.28))
+      : Math.min(210, Math.max(165, slabW * 0.22));
 
-    // 7 Expanded Monumental Chapters (Deep Literary Narrative of Collapse & Defiance)
-    const wallDefs = [
-      {
-        progress: 0.10,
-        text: 'THEY TOLD ME...',
-        manifesto: 'AND NOW, I REWRITE EVERY VERDICT CAST IN STONE',
-        sub: 'ACT I // THE BURDEN OF EXPECTATION',
-        side: 0
-      },
-      {
-        progress: 0.24,
-        text: '...THAT GRAVITY WAS LAW...',
-        manifesto: 'LAWS WERE WRITTEN FOR THOSE WHO SURRENDERED',
-        sub: 'ACT II // THE MONOLITHIC WEIGHT',
-        side: -0.04
-      },
-      {
-        progress: 0.38,
-        text: '...THERE WAS NO HOPE...',
-        manifesto: 'NO HOPE FOR THE CAGE TO EVER HOLD ME',
-        sub: 'ACT III // INTO THE UNFORGIVING SLIPSTREAM',
-        side: 0.04
-      },
-      {
-        progress: 0.52,
-        text: '...IN FALLING SILENCE...',
-        manifesto: 'SILENCE WAS JUST THE IGNITION BEFORE THE ROAR',
-        sub: 'ACT IV // CRITICAL VELOCITY & VOID',
-        side: 0
-      },
-      {
-        progress: 0.66,
-        text: '...THAT I WOULD BREAK...',
-        manifesto: 'ONLY TO SHATTER THE NIGHT ITSELF',
-        sub: 'ACT V // STRESS FRACTURES IN CONCRETE',
-        side: -0.04
-      },
-      {
-        progress: 0.80,
-        text: '...INTO COLD SHADOWS...',
-        manifesto: 'SHADOWS RETREAT AS LIGHT EMERGES',
-        sub: 'ACT VI // THE OBSIDIAN HORIZON',
-        side: 0.04
-      },
-      {
-        progress: 0.93,
-        text: '...BEFORE I EVER REACHED THE SKY.',
-        manifesto: 'THE BEDROCK WAS ALWAYS MY LAUNCHPAD',
-        sub: 'ACT VII // THE INVERTED ZENITH',
-        side: 0
-      }
-    ];
+    // The seven lines of the palindrome poem. The words never change between
+    // modes — only the reading direction (and therefore the meaning) does.
+    const wallDefs = POEM.map((entry, i) => ({
+      progress: entry.progress,
+      text: entry.line.toUpperCase(),
+      numeral: ROMAN[i],
+      sub: `ACT ${ROMAN[i]} // ${entry.act.toUpperCase()}`,
+      subAsc: `READ RISING // LINE ${ROMAN[POEM.length - 1 - i]} OF VII`,
+      side: entry.side,
+    }));
 
     this.walls = wallDefs.map((def) => {
       // Split each slab into 10 polygonal fracture chunks (3 cols x 3 rows with jittered vertices)
@@ -173,11 +144,13 @@ export class CanvasStoryEngine {
       for (let r = 0; r <= rows; r++) {
         points[r] = [];
         for (let c = 0; c <= cols; c++) {
-          const jitterX = (c === 0 || c === cols) ? 0 : (Math.random() - 0.5) * cellW * 0.45;
-          const jitterY = (r === 0 || r === rows) ? 0 : (Math.random() - 0.5) * cellH * 0.45;
+          const jitterX =
+            c === 0 || c === cols ? 0 : (Math.random() - 0.5) * cellW * 0.45;
+          const jitterY =
+            r === 0 || r === rows ? 0 : (Math.random() - 0.5) * cellH * 0.45;
           points[r][c] = {
             x: -slabW / 2 + c * cellW + jitterX,
-            y: -slabH / 2 + r * cellH + jitterY
+            y: -slabH / 2 + r * cellH + jitterY,
           };
         }
       }
@@ -189,7 +162,7 @@ export class CanvasStoryEngine {
             points[r][c],
             points[r][c + 1],
             points[r + 1][c + 1],
-            points[r + 1][c]
+            points[r + 1][c],
           ];
           const cx = (poly[0].x + poly[1].x + poly[2].x + poly[3].x) / 4;
           const cy = (poly[0].y + poly[1].y + poly[2].y + poly[3].y) / 4;
@@ -204,7 +177,7 @@ export class CanvasStoryEngine {
             dirX,
             dirY,
             rotSpeed: (Math.random() - 0.5) * 0.6,
-            scatterDist: 80 + Math.random() * 120
+            scatterDist: 80 + Math.random() * 120,
           });
         }
       }
@@ -214,7 +187,7 @@ export class CanvasStoryEngine {
         width: slabW,
         height: slabH,
         chunks,
-        hasTriggeredCrack: false
+        hasTriggeredCrack: false,
       };
     });
   }
@@ -228,7 +201,7 @@ export class CanvasStoryEngine {
         y: Math.random() * this.height,
         len: 30 + Math.random() * 85,
         speed: 2.2 + Math.random() * 4.5,
-        alpha: 0.08 + Math.random() * 0.22
+        alpha: 0.08 + Math.random() * 0.22,
       });
     }
   }
@@ -238,7 +211,8 @@ export class CanvasStoryEngine {
     for (let i = 0; i < this.particleCount; i++) {
       // Spread across the boy's entire freefall body (-170px shoes to +160px hair)
       const bodyX = (Math.random() - 0.5) * 340;
-      const bodyY = Math.sin((bodyX / 170) * 1.5) * 20 + (Math.random() - 0.5) * 45;
+      const bodyY =
+        Math.sin((bodyX / 170) * 1.5) * 20 + (Math.random() - 0.5) * 45;
       this.particles.push({
         x: bodyX,
         y: bodyY,
@@ -251,16 +225,52 @@ export class CanvasStoryEngine {
         maxLife: 0.6 + Math.random() * 0.8,
         speed: 0.007 + Math.random() * 0.015,
         wingT: Math.random(),
-        side: Math.random() < 0.5 ? -1 : 1
+        side: Math.random() < 0.5 ? -1 : 1,
       });
     }
   }
 
+  /**
+   * The moment of inversion at bedrock: a gold flash, a shockwave through the
+   * particle artwork, and kintsugi seams racing outward from the boy as if the
+   * frame itself cracked — and was immediately mended in gold.
+   */
+  triggerInversion() {
+    this.flash = this.reduceMotion ? 0.35 : 0.85;
+    this.particleImageEngine.pulse(1.0);
+    this.cracks = [];
+    const branches = this.width < 640 ? 9 : 14;
+    const reach = Math.hypot(this.width, this.height) * 0.62;
+    for (let b = 0; b < branches; b++) {
+      let angle = (b / branches) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
+      const pts = [{ x: 0, y: 0 }];
+      let x = 0,
+        y = 0;
+      const steps = 9 + Math.floor(Math.random() * 6);
+      for (let i = 0; i < steps; i++) {
+        angle += (Math.random() - 0.5) * 0.7;
+        const len = (reach / steps) * (0.6 + Math.random() * 0.8);
+        x += Math.cos(angle) * len;
+        y += Math.sin(angle) * len;
+        pts.push({ x, y });
+      }
+      this.cracks.push({
+        pts,
+        width: 0.8 + Math.random() * 1.8,
+        delay: Math.random() * 0.25,
+      });
+    }
+    this.crackStart = this.time;
+  }
+
   triggerImpact() {
+    this.particleImageEngine.pulse(0.7);
+    this.shake = Math.max(this.shake, this.reduceMotion ? 0 : 1);
+
     this.shockwaves.push({
       radius: 6,
       maxRadius: Math.max(this.width, this.height) * 0.75,
-      alpha: 1.0
+      alpha: 1.0,
     });
   }
 
@@ -276,7 +286,7 @@ export class CanvasStoryEngine {
         size: 2 + Math.random() * 4,
         rot: Math.random() * Math.PI * 2,
         rotSpeed: (Math.random() - 0.5) * 0.2,
-        alpha: 1.0
+        alpha: 1.0,
       });
     }
   }
@@ -300,7 +310,7 @@ export class CanvasStoryEngine {
       figX,
       figY,
       this.width,
-      this.height
+      this.height,
     );
   }
 
@@ -314,18 +324,25 @@ export class CanvasStoryEngine {
 
     ctx.save();
 
+    // Camera shake: decaying random offset applied to the whole frame
+    this.shake *= 0.88;
+    if (this.shake < 0.01) this.shake = 0;
+    this.shakeX = (Math.random() - 0.5) * 18 * this.shake;
+    this.shakeY = (Math.random() - 0.5) * 14 * this.shake;
+    ctx.translate(this.shakeX, this.shakeY);
+
     // 1. Sky Gradient
     const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
     if (truth > 0.01) {
-      skyGrad.addColorStop(0, '#1c150c');
-      skyGrad.addColorStop(0.35, '#2e1e0d');
-      skyGrad.addColorStop(0.7, '#182030');
-      skyGrad.addColorStop(1, '#0c1018');
+      skyGrad.addColorStop(0, "#1c150c");
+      skyGrad.addColorStop(0.35, "#2e1e0d");
+      skyGrad.addColorStop(0.7, "#182030");
+      skyGrad.addColorStop(1, "#0c1018");
     } else {
-      skyGrad.addColorStop(0, '#040711');
-      skyGrad.addColorStop(0.35, '#0b1324');
-      skyGrad.addColorStop(0.7, '#131e36');
-      skyGrad.addColorStop(1, '#050810');
+      skyGrad.addColorStop(0, "#040711");
+      skyGrad.addColorStop(0.35, "#0b1324");
+      skyGrad.addColorStop(0.7, "#131e36");
+      skyGrad.addColorStop(1, "#050810");
     }
     ctx.fillStyle = skyGrad;
     ctx.fillRect(0, 0, w, h);
@@ -335,8 +352,8 @@ export class CanvasStoryEngine {
     // ASCENT (truth = 1): Points UPWARDS (wide at bottom, tapering up to arrow tip into zenith sky)
     const shaftCenterX = w * 0.5 + this.mouse.normX * 14;
 
-    const topHalfW = (1 - truth) * (w * 0.40) + truth * 28;
-    const botHalfW = (1 - truth) * 28 + truth * (w * 0.40);
+    const topHalfW = (1 - truth) * (w * 0.4) + truth * 28;
+    const botHalfW = (1 - truth) * 28 + truth * (w * 0.4);
     // In ascent the shaft keeps widening to the bottom edge of the frame and fades
     // into the mirror floor — otherwise its wide base ends on a hard, truncated edge.
     const beamBottomY = truth > 0.05 ? h : h * 0.88;
@@ -346,15 +363,15 @@ export class CanvasStoryEngine {
     let beamGrad;
     if (truth > 0.05) {
       beamGrad = ctx.createLinearGradient(0, h, 0, 0);
-      beamGrad.addColorStop(0, 'rgba(245, 158, 11, 0)');
+      beamGrad.addColorStop(0, "rgba(245, 158, 11, 0)");
       beamGrad.addColorStop(0.18, `rgba(245, 158, 11, ${truth * 0.05})`);
       beamGrad.addColorStop(0.55, `rgba(251, 191, 36, ${truth * 0.12})`);
       beamGrad.addColorStop(1, `rgba(254, 240, 138, ${truth * 0.28})`);
     } else {
       beamGrad = ctx.createLinearGradient(0, 0, 0, h * 0.88);
-      beamGrad.addColorStop(0, 'rgba(215, 235, 255, 0.17)');
-      beamGrad.addColorStop(0.5, 'rgba(125, 160, 215, 0.06)');
-      beamGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      beamGrad.addColorStop(0, "rgba(215, 235, 255, 0.17)");
+      beamGrad.addColorStop(0.5, "rgba(125, 160, 215, 0.06)");
+      beamGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
     }
     ctx.fillStyle = beamGrad;
     ctx.beginPath();
@@ -369,13 +386,13 @@ export class CanvasStoryEngine {
     if (truth > 0.05) {
       // Fade the legs out just above the mirror so they dissolve into the floor
       const legBase = 0.15 + truth * 0.25;
-      const legGrad = ctx.createLinearGradient(0, h * 0.80, 0, 0);
-      legGrad.addColorStop(0, 'rgba(251, 191, 36, 0)');
+      const legGrad = ctx.createLinearGradient(0, h * 0.8, 0, 0);
+      legGrad.addColorStop(0, "rgba(251, 191, 36, 0)");
       legGrad.addColorStop(0.35, `rgba(251, 191, 36, ${legBase * 0.4})`);
       legGrad.addColorStop(1, `rgba(251, 191, 36, ${legBase})`);
       ctx.strokeStyle = legGrad;
     } else {
-      ctx.strokeStyle = 'rgba(147, 165, 207, 0.2)';
+      ctx.strokeStyle = "rgba(147, 165, 207, 0.2)";
     }
     ctx.lineWidth = 1.4;
     ctx.beginPath();
@@ -390,7 +407,8 @@ export class CanvasStoryEngine {
     const chevronY = (1 - truth) * (h * 0.68) + truth * (h * 0.24);
     const chevronW = 46;
     const chevronH = (1 - truth) * 22 - truth * 22; // Inverted!
-    ctx.strokeStyle = truth > 0.05 ? 'rgba(251, 191, 36, 0.45)' : 'rgba(215, 235, 255, 0.3)';
+    ctx.strokeStyle =
+      truth > 0.05 ? "rgba(251, 191, 36, 0.45)" : "rgba(215, 235, 255, 0.3)";
     ctx.lineWidth = 2.0;
     ctx.beginPath();
     ctx.moveTo(shaftCenterX - chevronW, chevronY - chevronH);
@@ -405,6 +423,9 @@ export class CanvasStoryEngine {
 
     // 3. High-Speed Vertical Slipstream Streaks (Clean editorial motion)
     this.renderSlipstreamStreaks(ctx, w, h, truth);
+
+    // 3b. Monumental outlined act numerals drifting at half parallax behind everything
+    this.renderActNumerals(ctx, w, h, p, truth);
 
     // 4. Distant Brutalist Monolith Pillars (Multi-layered atmospheric architecture)
     this.renderMonoliths(ctx, w, h, p, truth, t, false);
@@ -430,6 +451,89 @@ export class CanvasStoryEngine {
     // 11. Shockwaves on Mirror Impact
     this.renderShockwaves(ctx, w, h);
 
+    // 12. Kintsugi crack burst + inversion flash
+    this.renderKintsugiBurst(ctx, figX, figY, t);
+    if (this.flash > 0.005) {
+      ctx.fillStyle = `rgba(255, 238, 190, ${this.flash})`;
+      ctx.fillRect(-20, -20, w + 40, h + 40);
+      this.flash *= 0.9;
+    }
+
+    ctx.restore();
+  }
+
+  renderActNumerals(ctx, w, h, p, truth) {
+    const boyY = h * 0.48;
+    const totalTravel = h * 11.0;
+    const size = Math.min(w * 0.42, h * 0.62);
+
+    ctx.save();
+    ctx.font = `400 ${size}px "Cinzel", serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.letterSpacing = "0em";
+    ctx.lineWidth = 1;
+
+    this.walls.forEach((wall) => {
+      // Numerals travel at 55% of the walls' speed so they lag behind like distant signage
+      const y = boyY + (wall.progress - p) * totalTravel * 0.55;
+      if (y < -size || y > h + size) return;
+      const focus = 1 - Math.min(1, Math.abs(y - boyY) / (h * 0.9));
+      const alpha = 0.05 + focus * 0.13;
+      ctx.strokeStyle =
+        truth > 0.05
+          ? `rgba(251, 191, 36, ${alpha * 1.2})`
+          : `rgba(170, 190, 230, ${alpha})`;
+      ctx.strokeText(wall.numeral, w * 0.5 + this.mouse.normX * -30, y);
+    });
+    ctx.restore();
+  }
+
+  renderKintsugiBurst(ctx, cx, cy, t) {
+    if (this.crackStart < 0 || this.cracks.length === 0) return;
+    const age = t - this.crackStart;
+    const grow = Math.min(1, age / 1.1);
+    const fade = age < 1.6 ? 1 : Math.max(0, 1 - (age - 1.6) / 2.2);
+    if (fade <= 0) {
+      this.cracks = [];
+      this.crackStart = -1;
+      return;
+    }
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.shadowColor = "rgba(251, 191, 36, 0.9)";
+    ctx.shadowBlur = 14;
+
+    for (const crack of this.cracks) {
+      const local = Math.max(
+        0,
+        Math.min(1, (grow - crack.delay) / (1 - crack.delay)),
+      );
+      if (local <= 0) continue;
+      const eased = 1 - Math.pow(1 - local, 3);
+      const segs = crack.pts.length - 1;
+      const reach = eased * segs;
+
+      ctx.strokeStyle = `rgba(254, 222, 120, ${0.85 * fade})`;
+      ctx.lineWidth = crack.width;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      for (let i = 1; i <= segs; i++) {
+        const a = crack.pts[i - 1];
+        const b = crack.pts[i];
+        if (i <= reach) {
+          ctx.lineTo(b.x, b.y);
+        } else {
+          const f = reach - (i - 1);
+          if (f > 0) ctx.lineTo(a.x + (b.x - a.x) * f, a.y + (b.y - a.y) * f);
+          break;
+        }
+      }
+      ctx.stroke();
+    }
     ctx.restore();
   }
 
@@ -451,14 +555,22 @@ export class CanvasStoryEngine {
       // Skip if offscreen
       if (monoY < -m.height - 100 || monoY > h + m.height + 100) continue;
 
-      const monoX = w * 0.5 + m.side * (w * m.lateralDist) + this.mouse.normX * (15 * m.depth);
+      const monoX =
+        w * 0.5 +
+        m.side * (w * m.lateralDist) +
+        this.mouse.normX * (15 * m.depth);
 
       ctx.save();
       ctx.translate(monoX, monoY);
       ctx.rotate(m.tilt + Math.sin(t * 0.5 + i) * m.rotSpeed);
 
       // Brutalist Concrete Pillar Shading with Ambient Volumetric Occlusion
-      const pillarGrad = ctx.createLinearGradient(-m.width / 2, -m.height / 2, m.width / 2, m.height / 2);
+      const pillarGrad = ctx.createLinearGradient(
+        -m.width / 2,
+        -m.height / 2,
+        m.width / 2,
+        m.height / 2,
+      );
       if (truth > 0.05) {
         // Ascent: Warm golden obsidian monoliths with sunlight rims
         const darkAlpha = 0.4 + m.depth * 0.5;
@@ -477,9 +589,10 @@ export class CanvasStoryEngine {
       ctx.fillRect(-m.width / 2, -m.height / 2, m.width, m.height);
 
       // Concrete Formwork Hairline Edges & Seams
-      ctx.strokeStyle = truth > 0.05
-        ? `rgba(251, 191, 36, ${0.12 * m.depth + truth * 0.2})`
-        : `rgba(147, 165, 207, ${0.12 * m.depth})`;
+      ctx.strokeStyle =
+        truth > 0.05
+          ? `rgba(251, 191, 36, ${0.12 * m.depth + truth * 0.2})`
+          : `rgba(147, 165, 207, ${0.12 * m.depth})`;
       ctx.lineWidth = 1.0;
       ctx.strokeRect(-m.width / 2, -m.height / 2, m.width, m.height);
 
@@ -495,12 +608,17 @@ export class CanvasStoryEngine {
 
       // Minimal Navigational Altitude Markers (matching HUD Zenith / Mirror Floor scale)
       if (m.depth > 0.55) {
-        const altK = Math.max(0, Math.min(10, (1 - m.progress) * 10)).toFixed(1);
+        const altK = Math.max(0, Math.min(10, (1 - m.progress) * 10)).toFixed(
+          1,
+        );
         const label = m.width > 55 ? `${altK}K FT` : `${altK}K`;
         ctx.font = '700 8.5px "Space Mono", monospace';
-        ctx.textAlign = 'center';
-        ctx.letterSpacing = '0.2em';
-        ctx.fillStyle = truth > 0.05 ? 'rgba(251, 191, 36, 0.4)' : 'rgba(255, 255, 255, 0.22)';
+        ctx.textAlign = "center";
+        ctx.letterSpacing = "0.2em";
+        ctx.fillStyle =
+          truth > 0.05
+            ? "rgba(251, 191, 36, 0.4)"
+            : "rgba(255, 255, 255, 0.22)";
         ctx.fillText(label, 0, -m.height / 2 + 22);
       }
 
@@ -537,20 +655,23 @@ export class CanvasStoryEngine {
       if (distFromBoy <= 0 && distFromBoy >= -35 && !wall.hasTriggeredCrack) {
         wall.hasTriggeredCrack = true;
         this.spawnDebris(wallCenterX, boyY, 22);
-        if (this.onWallHit) this.onWallHit();
+        if (!this.reduceMotion) this.shake = Math.max(this.shake, 0.55);
+        this.particleImageEngine.pulse(0.35);
+        if (this.onWallHit) this.onWallHit(wall);
       } else if (distFromBoy > 50 && wall.hasTriggeredCrack) {
         wall.hasTriggeredCrack = false;
       }
 
       // In Ascent mode: Golden kintsugi magnetic pull pulls the shards back together!
       if (truth > 0.05) {
-        shatter *= (1.0 - truth * 0.85); // shards realign
+        shatter *= 1.0 - truth * 0.85; // shards realign
       }
 
       // Shard dissolution: In descent, shattered stone shards gracefully dissolve into dust
       // so broken fragments don't linger permanently at the screen edges.
       // In ascent, shards remain 100% visible and weld back together!
-      const wallAlpha = truth > 0.05 ? 1.0 : Math.max(0, 1.0 - Math.pow(shatter, 1.5) * 0.94);
+      const wallAlpha =
+        truth > 0.05 ? 1.0 : Math.max(0, 1.0 - Math.pow(shatter, 1.5) * 0.94);
       if (wallAlpha < 0.02) return;
 
       ctx.save();
@@ -563,7 +684,8 @@ export class CanvasStoryEngine {
 
         // Displace and tumble chunk based on shatter impact
         const offsetX = chunk.dirX * chunk.scatterDist * shatter;
-        const offsetY = chunk.dirY * chunk.scatterDist * 0.6 * shatter + shatter * 45;
+        const offsetY =
+          chunk.dirY * chunk.scatterDist * 0.6 * shatter + shatter * 45;
         const rot = chunk.rotSpeed * shatter;
 
         ctx.translate(chunk.cx + offsetX, chunk.cy + offsetY);
@@ -580,23 +702,41 @@ export class CanvasStoryEngine {
         ctx.clip();
 
         // 1. Draw Concrete Stone Slab Background
-        const slabGrad = ctx.createLinearGradient(-wall.width / 2, -wall.height / 2, wall.width / 2, wall.height / 2);
+        const slabGrad = ctx.createLinearGradient(
+          -wall.width / 2,
+          -wall.height / 2,
+          wall.width / 2,
+          wall.height / 2,
+        );
         if (truth > 0.05) {
-          slabGrad.addColorStop(0, '#2a2218');
-          slabGrad.addColorStop(0.5, '#1e1810');
-          slabGrad.addColorStop(1, '#140f0a');
+          slabGrad.addColorStop(0, "#2a2218");
+          slabGrad.addColorStop(0.5, "#1e1810");
+          slabGrad.addColorStop(1, "#140f0a");
         } else {
-          slabGrad.addColorStop(0, '#1c1f26');
-          slabGrad.addColorStop(0.5, '#15171d');
-          slabGrad.addColorStop(1, '#0e1014');
+          slabGrad.addColorStop(0, "#1c1f26");
+          slabGrad.addColorStop(0.5, "#15171d");
+          slabGrad.addColorStop(1, "#0e1014");
         }
         ctx.fillStyle = slabGrad;
-        ctx.fillRect(-wall.width / 2, -wall.height / 2, wall.width, wall.height);
+        ctx.fillRect(
+          -wall.width / 2,
+          -wall.height / 2,
+          wall.width,
+          wall.height,
+        );
 
         // 2. Chiseled Architectural Formwork Lines
-        ctx.strokeStyle = truth > 0.05 ? 'rgba(251, 191, 36, 0.2)' : 'rgba(255, 255, 255, 0.08)';
+        ctx.strokeStyle =
+          truth > 0.05
+            ? "rgba(251, 191, 36, 0.2)"
+            : "rgba(255, 255, 255, 0.08)";
         ctx.lineWidth = 1.5;
-        ctx.strokeRect(-wall.width / 2 + 14, -wall.height / 2 + 14, wall.width - 28, wall.height - 28);
+        ctx.strokeRect(
+          -wall.width / 2 + 14,
+          -wall.height / 2 + 14,
+          wall.width - 28,
+          wall.height - 28,
+        );
 
         // Maximum available width inside the architectural slab box
         const maxTextW = wall.width - 70;
@@ -604,39 +744,51 @@ export class CanvasStoryEngine {
         // 3. Subtitle Chiseled into Stone (Fitted cleanly)
         let subSize = Math.round(Math.min(12, Math.max(9, wall.width * 0.014)));
         ctx.font = `700 ${subSize}px "Space Mono", monospace`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.letterSpacing = '0.3em';
-        const measuredSubW = ctx.measureText(wall.sub).width;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.letterSpacing = "0.3em";
+        const subText = truth > 0.05 ? wall.subAsc : wall.sub;
+        const measuredSubW = ctx.measureText(subText).width;
+
         if (measuredSubW > maxTextW) {
-          subSize = Math.max(8, Math.floor(subSize * (maxTextW / measuredSubW)));
+          subSize = Math.max(
+            8,
+            Math.floor(subSize * (maxTextW / measuredSubW)),
+          );
           ctx.font = `700 ${subSize}px "Space Mono", monospace`;
         }
-        ctx.fillStyle = truth > 0.05 ? 'rgba(251, 191, 36, 0.7)' : 'rgba(147, 165, 207, 0.65)';
-        ctx.fillText(wall.sub, 0, -wall.height * 0.24);
+        ctx.fillStyle =
+          truth > 0.05
+            ? "rgba(251, 191, 36, 0.7)"
+            : "rgba(147, 165, 207, 0.65)";
+        ctx.fillText(subText, 0, -wall.height * 0.24);
 
-        // 4. Primary Chiseled Poetry Text (Measured & Dynamically Scaled to Fit Perfectly Inside Box!)
-        const displayText = truth > 0.05 ? wall.manifesto : wall.text;
-        let targetFontSize = Math.round(Math.min(42, Math.max(20, wall.width * 0.046)));
+        // 4. Primary Chiseled Poetry Text — identical in both modes (it's a palindrome)
+        const displayText = wall.text;
+        let targetFontSize = Math.round(
+          Math.min(42, Math.max(20, wall.width * 0.046)),
+        );
         ctx.font = `700 ${targetFontSize}px "Cinzel", serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.letterSpacing = '0.03em';
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.letterSpacing = "0.03em";
 
         // Measure text and automatically scale down so it never spills outside the slab box!
         const measuredHeadlineW = ctx.measureText(displayText).width;
         if (measuredHeadlineW > maxTextW) {
-          targetFontSize = Math.floor(targetFontSize * (maxTextW / measuredHeadlineW));
+          targetFontSize = Math.floor(
+            targetFontSize * (maxTextW / measuredHeadlineW),
+          );
           ctx.font = `700 ${Math.max(14, targetFontSize)}px "Cinzel", serif`;
         }
 
         if (truth > 0.05) {
           // Ascent Mode: Golden Sunlight Glow on stone
-          ctx.fillStyle = '#fef08a';
+          ctx.fillStyle = "#fef08a";
           ctx.fillText(displayText, 0, wall.height * 0.1);
         } else {
           // Descent Mode: High-fashion silver-white chiseled in relief
-          ctx.fillStyle = '#ffffff';
+          ctx.fillStyle = "#ffffff";
           ctx.fillText(displayText, 0, wall.height * 0.1);
         }
 
@@ -691,9 +843,10 @@ export class CanvasStoryEngine {
       if (s.y < -120) s.y = h + 120;
       if (s.y > h + 120) s.y = -120;
 
-      ctx.strokeStyle = truth > 0.05
-        ? `rgba(251, 191, 36, ${s.alpha * (0.4 + truth * 0.5)})`
-        : `rgba(215, 235, 255, ${s.alpha * 0.9})`;
+      ctx.strokeStyle =
+        truth > 0.05
+          ? `rgba(251, 191, 36, ${s.alpha * (0.4 + truth * 0.5)})`
+          : `rgba(215, 235, 255, ${s.alpha * 0.9})`;
 
       ctx.beginPath();
       ctx.moveTo(s.x, s.y);
@@ -721,7 +874,10 @@ export class CanvasStoryEngine {
     ctx.fillStyle = waterGrad;
     ctx.fillRect(0, waterY, w, h - waterY);
 
-    ctx.strokeStyle = truth > 0.01 ? `rgba(251, 191, 36, ${waterAlpha * 0.7})` : `rgba(255, 255, 255, ${waterAlpha * 0.4})`;
+    ctx.strokeStyle =
+      truth > 0.01
+        ? `rgba(251, 191, 36, ${waterAlpha * 0.7})`
+        : `rgba(255, 255, 255, ${waterAlpha * 0.4})`;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(0, waterY);
@@ -731,7 +887,10 @@ export class CanvasStoryEngine {
     for (let i = 0; i < 3; i++) {
       const r = (this.time * 24 + i * 45) % 190;
       const rAlpha = Math.max(0, (1 - r / 190) * waterAlpha * 0.35);
-      ctx.strokeStyle = truth > 0.01 ? `rgba(251, 191, 36, ${rAlpha})` : `rgba(200, 225, 255, ${rAlpha})`;
+      ctx.strokeStyle =
+        truth > 0.01
+          ? `rgba(251, 191, 36, ${rAlpha})`
+          : `rgba(200, 225, 255, ${rAlpha})`;
       ctx.beginPath();
       ctx.ellipse(w / 2, waterY + 22, r * 1.7, r * 0.24, 0, 0, Math.PI * 2);
       ctx.stroke();
@@ -774,15 +933,16 @@ export class CanvasStoryEngine {
         p.life = 0;
         // Re-spawn spread widely across the boy's freefall body (-170px to +160px)
         const bodyX = (Math.random() - 0.5) * 340;
-        const bodyY = Math.sin((bodyX / 170) * 1.5) * 20 + (Math.random() - 0.5) * 45;
+        const bodyY =
+          Math.sin((bodyX / 170) * 1.5) * 20 + (Math.random() - 0.5) * 45;
         p.x = bodyX;
         p.y = bodyY;
         p.vx = (Math.random() - 0.5) * 2.2;
       }
 
       let drawX, drawY, color, alpha;
-      const descColors = ['#00f0ff', '#38bdf8', '#7dd3fc', '#e0f2fe'];
-      const ascColors = ['#fbbf24', '#ffd700', '#f59e0b', '#fffbeb'];
+      const descColors = ["#00f0ff", "#38bdf8", "#7dd3fc", "#e0f2fe"];
+      const ascColors = ["#fbbf24", "#ffd700", "#f59e0b", "#fffbeb"];
 
       if (truth > 0.5) {
         const span = 40 + p.wingT * 180;
@@ -830,7 +990,15 @@ export class CanvasStoryEngine {
       ctx.lineWidth = 3;
 
       ctx.beginPath();
-      ctx.ellipse(w / 2, h * 0.82, sw.radius, sw.radius * 0.3, 0, 0, Math.PI * 2);
+      ctx.ellipse(
+        w / 2,
+        h * 0.82,
+        sw.radius,
+        sw.radius * 0.3,
+        0,
+        0,
+        Math.PI * 2,
+      );
       ctx.stroke();
       ctx.restore();
 

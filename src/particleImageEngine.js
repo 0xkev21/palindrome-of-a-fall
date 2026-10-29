@@ -1,9 +1,9 @@
-import * as THREE from 'three';
+import * as THREE from "three";
 
 /**
  * Three.js GPU Particle Image Engine
  * Transforms high-resolution narrative artwork into 45,000+ interactive 3D light particles.
- * 
+ *
  * - Pure Particle Point-Cloud: The image ITSELF is composed of thousands of smooth, anti-aliased circular points.
  * - Zero mosaic pixelation: points are tiny (2.2px to 4.2px) with soft Gaussian falloff.
  * - NO artificial circular hole around the boy.
@@ -21,67 +21,67 @@ export class ParticleImageEngine {
     this.scenes = [
       {
         act: 1,
-        progress: 0.10,
-        descSrc: '/scenes/act1_desc.jpg',
-        ascSrc: '/scenes/act1_asc.jpg',
-        title: 'ACT I // ROOFTOP VIGIL',
-        subDesc: 'A lone vigil under the suffocating rain.',
-        subAsc: 'Golden dawn breaks through the tempest.'
+        progress: 0.1,
+        descSrc: "/scenes/act1_desc.jpg",
+        ascSrc: "/scenes/act1_asc.jpg",
+        title: "ACT I // ROOFTOP VIGIL",
+        subDesc: "A lone vigil under the suffocating rain.",
+        subAsc: "Golden dawn breaks through the tempest.",
       },
       {
         act: 2,
         progress: 0.24,
-        descSrc: '/scenes/act2_desc.jpg',
-        ascSrc: '/scenes/act2_asc.jpg',
-        title: 'ACT II // MONOLITHIC CHASM',
-        subDesc: 'Towering concrete canyons pull downward.',
-        subAsc: 'Sunlight carves paths through the abyss.'
+        descSrc: "/scenes/act2_desc.jpg",
+        ascSrc: "/scenes/act2_asc.jpg",
+        title: "ACT II // MONOLITHIC CHASM",
+        subDesc: "Towering concrete canyons pull downward.",
+        subAsc: "Sunlight carves paths through the abyss.",
       },
       {
         act: 3,
         progress: 0.38,
-        descSrc: '/scenes/act3_desc.jpg',
-        ascSrc: '/scenes/act3_asc.jpg',
-        title: 'ACT III // THE SUSPENDED CAGE',
-        subDesc: 'Trapped inside the iron cage of fear.',
-        subAsc: 'Shattered bars transform into golden flight.'
+        descSrc: "/scenes/act3_desc.jpg",
+        ascSrc: "/scenes/act3_asc.jpg",
+        title: "ACT III // THE SUSPENDED CAGE",
+        subDesc: "Trapped inside the iron cage of fear.",
+        subAsc: "Shattered bars transform into golden flight.",
       },
       {
         act: 4,
         progress: 0.52,
-        descSrc: '/scenes/act4_desc.jpg',
-        ascSrc: '/scenes/act4_asc.jpg',
-        title: 'ACT IV // COSMIC SILENCE',
-        subDesc: 'Silent freefall in the infinite cold void.',
-        subAsc: 'A solar nebula shockwave ignites the dark.'
+        descSrc: "/scenes/act4_desc.jpg",
+        ascSrc: "/scenes/act4_asc.jpg",
+        title: "ACT IV // COSMIC SILENCE",
+        subDesc: "Silent freefall in the infinite cold void.",
+        subAsc: "A solar nebula shockwave ignites the dark.",
       },
       {
         act: 5,
         progress: 0.66,
-        descSrc: '/scenes/act5_desc.jpg',
-        ascSrc: '/scenes/act5_asc.jpg',
-        title: 'ACT V // STRESS FRACTURES',
-        subDesc: 'Concrete and spirit splintering on impact.',
-        subAsc: 'Kintsugi seams weld every fracture in gold.'
+        descSrc: "/scenes/act5_desc.jpg",
+        ascSrc: "/scenes/act5_asc.jpg",
+        title: "ACT V // STRESS FRACTURES",
+        subDesc: "Concrete and spirit splintering on impact.",
+        subAsc: "Kintsugi seams weld every fracture in gold.",
       },
       {
         act: 6,
-        progress: 0.80,
-        descSrc: '/scenes/act6_desc.jpg',
-        ascSrc: '/scenes/act6_asc.jpg',
-        title: 'ACT VI // OBSIDIAN HORIZON',
-        subDesc: 'Submerged deep in the freezing ocean abyss.',
-        subAsc: 'Bursting through the surface into blinding light.'
+        progress: 0.8,
+        descSrc: "/scenes/act6_desc.jpg",
+        ascSrc: "/scenes/act6_asc.jpg",
+        title: "ACT VI // OBSIDIAN HORIZON",
+        subDesc: "Submerged deep in the freezing ocean abyss.",
+        subAsc: "Bursting through the surface into blinding light.",
       },
       {
         act: 7,
         progress: 0.93,
-        descSrc: '/scenes/act7_desc.jpg',
-        ascSrc: '/scenes/act7_asc.jpg',
-        title: 'ACT VII // INVERTED BEDROCK',
-        subDesc: 'The dark mirror bedrock of the fall.',
-        subAsc: 'The bedrock erupts as a luminous launchpad.'
-      }
+        descSrc: "/scenes/act7_desc.jpg",
+        ascSrc: "/scenes/act7_asc.jpg",
+        title: "ACT VII // INVERTED BEDROCK",
+        subDesc: "The dark mirror bedrock of the fall.",
+        subAsc: "The bedrock erupts as a luminous launchpad.",
+      },
     ];
 
     // Texture Cache (with a LoadingManager so the preloader can report real progress)
@@ -108,7 +108,7 @@ export class ParticleImageEngine {
     this.preloadTextures();
 
     // Three.js Scene Setup
-    this.canvas = document.createElement('canvas');
+    this.canvas = document.createElement("canvas");
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight;
 
@@ -116,7 +116,7 @@ export class ParticleImageEngine {
       canvas: this.canvas,
       alpha: true,
       antialias: true,
-      powerPreference: 'high-performance'
+      powerPreference: "high-performance",
     });
     this.renderer.setPixelRatio(1);
     this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -136,6 +136,14 @@ export class ParticleImageEngine {
     this.mouseX = 0;
     this.mouseY = 0;
     this.motionScale = 1; // 0 disables ambient motion (prefers-reduced-motion)
+    this.waveStart = -1;
+    this.waveAmp = 0;
+  }
+
+  /** Send a shockwave ring through the point cloud, centred on the boy. */
+  pulse(amp = 1) {
+    this.waveStart = performance.now();
+    this.waveAmp = amp * (this.motionScale > 0 ? 1 : 0.4);
   }
 
   preloadTextures() {
@@ -172,22 +180,27 @@ export class ParticleImageEngine {
       }
     }
 
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geometry.setAttribute('aUv', new THREE.BufferAttribute(uvs, 2));
-    geometry.setAttribute('aSeed', new THREE.BufferAttribute(seeds, 1));
+    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute("aUv", new THREE.BufferAttribute(uvs, 2));
+    geometry.setAttribute("aSeed", new THREE.BufferAttribute(seeds, 1));
 
     // Custom Vertex & Fragment Shaders for Pure Particle Image
     this.uniforms = {
-      uTexCurrent: { value: this.textures['desc_1'] || null },
-      uTexNext: { value: this.textures['desc_1'] || null },
+      uTexCurrent: { value: this.textures["desc_1"] || null },
+      uTexNext: { value: this.textures["desc_1"] || null },
       uTransition: { value: 0.0 },
       uTruth: { value: 0.0 },
       uTime: { value: 0.0 },
       uMouse: { value: new THREE.Vector2(-999, -999) },
       uScrollVelocity: { value: 0.0 },
-      uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+      uResolution: {
+        value: new THREE.Vector2(window.innerWidth, window.innerHeight),
+      },
       uGlobalAlpha: { value: 1.0 },
-      uMotion: { value: 1.0 }
+      uMotion: { value: 1.0 },
+      uWaveT: { value: -1.0 },
+      uWaveAmp: { value: 0.0 },
+      uWaveOrigin: { value: new THREE.Vector2(0, 0) },
     };
 
     const vertexShader = `
@@ -200,6 +213,9 @@ export class ParticleImageEngine {
       uniform float uScrollVelocity;
       uniform vec2 uResolution;
       uniform float uMotion;
+      uniform float uWaveT;
+      uniform float uWaveAmp;
+      uniform vec2 uWaveOrigin;
 
       attribute vec2 aUv;
       attribute float aSeed;
@@ -263,23 +279,38 @@ export class ParticleImageEngine {
           pos.z += push * 2.0;
         }
 
-        // 4. Subtle Chapter Shift Dispersal
+        // 4. Chapter Shift Dispersal — the image obeys the story's gravity:
+        // between acts it rains downward while falling, and lifts upward while flying.
         float scatterAmount = sin(uTransition * 3.14159);
-        pos.x += sin(aSeed * 25.0) * 45.0 * scatterAmount;
-        pos.y += cos(aSeed * 25.0) * 45.0 * scatterAmount;
+        float gravityDir = mix(-1.0, 1.0, uTruth);
+        pos.x += sin(aSeed * 25.0) * 22.0 * scatterAmount;
+        pos.y += gravityDir * (18.0 + aSeed * aSeed * 110.0) * scatterAmount * (0.4 + 0.6 * uMotion);
+
+        // 5. Shockwave ring (wall impacts & the inversion) rippling out from the boy
+        float ring = 0.0;
+        if (uWaveT >= 0.0) {
+          vec2 fromOrigin = pos.xy - uWaveOrigin;
+          float od = length(fromOrigin) + 0.0001;
+          float radius = uWaveT * max(uResolution.x, uResolution.y) * 0.9;
+          float band = (od - radius) / 70.0;
+          ring = exp(-band * band) * uWaveAmp * max(0.0, 1.0 - uWaveT / 1.6);
+          pos.xy += (fromOrigin / od) * ring * 46.0;
+          pos.z += ring * 60.0;
+        }
 
         // Orthographic Screen-Space Projection
         vec2 norm = pos.xy / uResolution;
         vec2 clip = norm * 2.0 - 1.0;
         gl_Position = vec4(clip.x, clip.y, pos.z * 0.001, 1.0);
 
-        // 5. Fine, Delicate Stardust Particle Sizing (1.8px to 4.6px - crisp, starry, NOT chunky blobs)
-        gl_PointSize = 1.8 + lum * 2.5 + aSeed * 0.7;
+        // 6. Fine, Delicate Stardust Particle Sizing (1.8px to 4.6px - crisp, starry, NOT chunky blobs)
+        gl_PointSize = 1.8 + lum * 2.5 + aSeed * 0.7 + ring * 2.5;
+        vColor += ring * mix(vec3(0.55, 0.75, 1.0), vec3(1.0, 0.8, 0.35), uTruth) * 0.6;
 
         // Alpha calculation: Clean thresholding allows dark negative space to dissolve,
         // while luminous architectural & celestial features glow with fine stardust clarity
         float lumFactor = smoothstep(0.04, 0.35, lum);
-        vAlpha = lumFactor * (0.45 + lum * 0.55) * (1.0 - scatterAmount * 0.4);
+        vAlpha = max(lumFactor * (0.45 + lum * 0.55) * (1.0 - scatterAmount * 0.4), ring * 0.5);
       }
     `;
 
@@ -306,14 +337,25 @@ export class ParticleImageEngine {
       uniforms: this.uniforms,
       transparent: true,
       depthWrite: false,
-      blending: THREE.NormalBlending
+      blending: THREE.NormalBlending,
     });
 
     this.points = new THREE.Points(geometry, this.material);
     this.scene.add(this.points);
   }
 
-  update(dt, progress, scrollVelocity, truth, mouseX, mouseY, boyX, boyY, w, h) {
+  update(
+    dt,
+    progress,
+    scrollVelocity,
+    truth,
+    mouseX,
+    mouseY,
+    boyX,
+    boyY,
+    w,
+    h,
+  ) {
     this.scrollVelocity = scrollVelocity;
     this.truth = truth;
     this.mouseX = mouseX;
@@ -345,7 +387,7 @@ export class ParticleImageEngine {
 
     // Update textures based on mode (Descent vs. Ascent)
     const isAscent = truth > 0.5;
-    const prefix = isAscent ? 'asc_' : 'desc_';
+    const prefix = isAscent ? "asc_" : "desc_";
 
     const currTex = this.textures[`${prefix}${this.scenes[currIdx].act}`];
     const nextTex = this.textures[`${prefix}${this.scenes[nextIdx].act}`];
@@ -362,6 +404,13 @@ export class ParticleImageEngine {
     this.uniforms.uResolution.value.set(w, h);
     this.uniforms.uGlobalAlpha.value = 0.92;
     this.uniforms.uMotion.value = this.motionScale;
+
+    const waveT =
+      this.waveStart < 0 ? -1 : (performance.now() - this.waveStart) * 0.001;
+    if (waveT > 1.6) this.waveStart = -1;
+    this.uniforms.uWaveT.value = waveT > 1.6 ? -1 : waveT;
+    this.uniforms.uWaveAmp.value = this.waveAmp;
+    this.uniforms.uWaveOrigin.value.set(boyX, h - boyY);
   }
 
   render(ctx, w, h, truth) {
@@ -382,16 +431,20 @@ export class ParticleImageEngine {
     // Subtle Monospace Telemetry Stamp in Background
     const currentScene = this.scenes[this.currentActIdx];
     if (currentScene) {
-      ctx.globalAlpha = 0.40;
+      ctx.globalAlpha = 0.4;
       ctx.font = '700 9px "Space Mono", monospace';
-      ctx.letterSpacing = '0.35em';
-      ctx.textAlign = 'left';
-      ctx.fillStyle = truth > 0.05 ? 'rgba(251, 191, 36, 0.8)' : 'rgba(147, 197, 253, 0.7)';
+      ctx.letterSpacing = "0.35em";
+      ctx.textAlign = "left";
+      ctx.fillStyle =
+        truth > 0.05 ? "rgba(251, 191, 36, 0.8)" : "rgba(147, 197, 253, 0.7)";
       ctx.fillText(currentScene.title, 45, h - 45);
 
       ctx.font = 'italic 400 11px "Plus Jakarta Sans", sans-serif';
-      ctx.letterSpacing = '0.05em';
-      ctx.fillStyle = truth > 0.05 ? 'rgba(254, 240, 138, 0.65)' : 'rgba(226, 232, 240, 0.55)';
+      ctx.letterSpacing = "0.05em";
+      ctx.fillStyle =
+        truth > 0.05
+          ? "rgba(254, 240, 138, 0.65)"
+          : "rgba(226, 232, 240, 0.55)";
       const sub = truth > 0.05 ? currentScene.subAsc : currentScene.subDesc;
       ctx.fillText(sub, 45, h - 28);
     }

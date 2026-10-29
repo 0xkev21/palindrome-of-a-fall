@@ -24,7 +24,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 
-  <style>
+   <style>
     :root {
       --bg: #030306;
       --text: #eaebee;
@@ -477,7 +477,7 @@
       right: 2.5rem;
       top: 50%;
       transform: translateY(-50%);
-      height: 240px;
+      height: 300px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -515,8 +515,8 @@
       color: rgba(255, 255, 255, 0.5);
       white-space: nowrap;
     }
-    .altimeter-label.top { top: 0; }
-    .altimeter-label.bottom { bottom: 0; }
+    .altimeter-label.top { top: -1.9rem; right: -0.4rem; }
+    .altimeter-label.bottom { bottom: -1.9rem; right: -0.4rem; }
 
     /* Scrollable Poetry Track */
     .scroll-container {
@@ -701,29 +701,7 @@
       50% { transform: translateY(-4px); opacity: 1; text-shadow: 0 0 10px rgba(251, 191, 36, 0.8); }
     }
 
-    /* Ambient Replay Dock (Minimalist, seamlessly blends with environment) */
-    .replay-dock {
-      position: fixed;
-      bottom: 2.8rem;
-      left: 50%;
-      transform: translateX(-50%) translateY(14px);
-      z-index: 120;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-      text-align: center;
-    }
-    .replay-dock.visible {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-      pointer-events: auto;
-    }
-    .replay-pill {
-      display: inline-flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.45rem;
-    }
+    /* Replay button (lives in the finale) */
     .replay-btn {
       background: rgba(10, 12, 18, 0.72);
       border: 1px solid rgba(251, 191, 36, 0.45);
@@ -758,13 +736,415 @@
     .replay-btn:hover .replay-icon {
       transform: rotate(180deg);
     }
-    .replay-sub {
+
+
+    /* ==========================================
+       CINEMATIC FINISH: grain, vignette, letterbox
+       ========================================== */
+    .fx-vignette {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      pointer-events: none;
+      background: radial-gradient(ellipse 120% 90% at 50% 45%, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+    }
+    .fx-grain {
+      position: fixed;
+      inset: -50%;
+      z-index: 51;
+      pointer-events: none;
+      opacity: 0.075;
+      mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      animation: grainShift 0.9s steps(6) infinite;
+    }
+    @keyframes grainShift {
+      0% { transform: translate(0, 0); }
+      20% { transform: translate(-6%, 4%); }
+      40% { transform: translate(5%, -7%); }
+      60% { transform: translate(-3%, 8%); }
+      80% { transform: translate(7%, 2%); }
+      100% { transform: translate(0, 0); }
+    }
+    .letterbox {
+      position: fixed;
+      left: 0;
+      right: 0;
+      height: 11vh;
+      background: #000;
+      z-index: 140;
+      pointer-events: none;
+      transform: scaleY(0);
+    }
+    .letterbox.top { top: 0; transform-origin: top; }
+    .letterbox.bottom { bottom: 0; transform-origin: bottom; }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+
+    /* Split-text helpers */
+    .split-line { display: block; overflow: hidden; padding-bottom: 0.08em; }
+    .char { display: inline-block; will-change: transform, opacity; }
+
+    /* ==========================================
+       INTRO: title sequence on the rooftop
+       ========================================== */
+    .intro {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 15vh 1.5rem 7vh;
+      text-align: center;
+    }
+    .intro-kicker {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.45em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1.4rem;
+      opacity: 0;
+    }
+    .intro-title {
+      font-family: var(--font-display);
+      font-weight: 400;
+      line-height: 0.92;
+      color: #fff;
+      text-transform: uppercase;
+      perspective: 800px;
+    }
+    .intro-title .t-main {
+      font-size: clamp(2.6rem, 9.5vw, 8.6rem);
+      letter-spacing: 0.04em;
+      text-shadow: 0 0 60px rgba(147, 165, 207, 0.35);
+    }
+    .intro-title .t-sub {
+      font-family: var(--font-title);
+      font-weight: 400;
+      font-size: clamp(0.9rem, 2vw, 1.5rem);
+      letter-spacing: 0.9em;
+      margin-top: 1rem;
+      margin-right: -0.9em;
+      color: rgba(234, 235, 238, 0.8);
+    }
+    /* The title's reflection: the word, mirrored, sinking into dark water */
+    .intro-mirror {
+      font-family: var(--font-display);
+      font-size: clamp(2.6rem, 9.5vw, 8.6rem);
+      letter-spacing: 0.04em;
+      line-height: 0.92;
+      text-transform: uppercase;
+      color: transparent;
+      -webkit-text-stroke: 1px rgba(147, 165, 207, 0.35);
+      transform: scaleY(-1);
+      margin-top: 0.2rem;
+      -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0.9), transparent 70%);
+      mask-image: linear-gradient(to top, rgba(0,0,0,0.9), transparent 70%);
+      opacity: 0;
+      user-select: none;
+    }
+    .intro-foot {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.4rem;
+    }
+    .intro-lede {
+      font-family: var(--font-body);
+      font-weight: 300;
+      font-size: clamp(0.95rem, 1.4vw, 1.15rem);
+      line-height: 1.7;
+      color: rgba(234, 235, 238, 0.75);
+      max-width: 34rem;
+      text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
+      opacity: 0;
+    }
+    .intro-lede em {
+      font-style: italic;
+      color: #fff;
+    }
+    .scroll-cue {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.8rem;
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.55);
+      opacity: 0;
+    }
+    .cue-line {
+      position: relative;
+      width: 1px;
+      height: 52px;
+      background: rgba(255, 255, 255, 0.15);
+      overflow: hidden;
+    }
+    .cue-line::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: -40%;
+      width: 100%;
+      height: 40%;
+      background: linear-gradient(to bottom, transparent, #fff);
+      animation: cueDrop 1.8s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+    }
+    @keyframes cueDrop {
+      to { top: 100%; }
+    }
+
+    /* ==========================================
+       TRANSCRIPT: the poem assembling as it is read
+       ========================================== */
+    .transcript {
+      position: fixed;
+      left: 2.5rem;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 90;
+      pointer-events: none;
+      width: 15.5rem;
+      opacity: 0;
+      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .transcript.visible { opacity: 1; }
+    .transcript-head {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      transition: color 0.6s;
+    }
+    .transcript-arrow {
+      display: inline-block;
+      transition: transform 1.2s cubic-bezier(0.76, 0, 0.24, 1);
+    }
+    body.ascent-mode .transcript-head { color: var(--truth-gold); }
+    body.ascent-mode .transcript-arrow { transform: rotate(180deg); }
+    .transcript ol {
+      list-style: none;
+      border-left: 1px solid rgba(255, 255, 255, 0.12);
+      padding-left: 1rem;
+    }
+    .transcript li {
+      display: flex;
+      gap: 0.7rem;
+      font-family: var(--font-display);
+      font-size: 0.82rem;
+      line-height: 1.35;
+      padding: 0.28rem 0;
+      color: rgba(255, 255, 255, 0.9);
+      opacity: 0.08;
+      transform: translateX(-6px);
+      filter: blur(3px);
+      transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.16, 1, 0.3, 1), filter 0.7s ease, color 0.5s;
+    }
+    .transcript li .num {
+      flex: 0 0 1.8rem;
       font-family: var(--font-mono);
       font-size: 0.58rem;
-      letter-spacing: 0.25em;
-      color: rgba(255, 255, 255, 0.4);
+      letter-spacing: 0.1em;
+      color: rgba(255, 255, 255, 0.35);
+      padding-top: 0.15rem;
+    }
+    .transcript li.read {
+      opacity: 0.5;
+      transform: none;
+      filter: none;
+    }
+    .transcript li.current {
+      opacity: 1;
+      color: #fff;
+      text-shadow: 0 0 18px rgba(147, 165, 207, 0.6);
+    }
+    body.ascent-mode .transcript li.current {
+      color: #fef08a;
+      text-shadow: 0 0 18px rgba(251, 191, 36, 0.6);
+    }
+
+    /* Act ticks on the altimeter rail */
+    .alt-tick {
+      position: absolute;
+      left: 50%;
+      width: 10px;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.35);
+      transform: translateX(-50%);
+      transition: background 0.4s, width 0.4s;
+    }
+    .alt-tick span {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-family: var(--font-display);
+      font-size: 0.62rem;
+      color: rgba(255, 255, 255, 0.3);
+      transition: color 0.4s;
+    }
+    .alt-tick.active { width: 18px; background: #fff; }
+    .alt-tick.active span { color: #fff; }
+    body.ascent-mode .alt-tick.active { background: var(--truth-gold); }
+    body.ascent-mode .alt-tick.active span { color: var(--truth-gold); }
+
+    /* ==========================================
+       INVERSION: the turn at bedrock
+       ========================================== */
+    .inversion {
+      position: fixed;
+      inset: 0;
+      z-index: 150;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 0 1.5rem;
+      visibility: hidden;
+    }
+    .inv-kicker {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      letter-spacing: 0.45em;
       text-transform: uppercase;
-      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+      color: rgba(254, 240, 138, 0.85);
+      margin-bottom: 1.6rem;
+    }
+    .inv-line {
+      font-family: var(--font-display);
+      font-weight: 400;
+      font-size: clamp(2rem, 6.5vw, 5.6rem);
+      line-height: 1.05;
+      color: #fff;
+      text-transform: uppercase;
+      text-shadow: 0 0 50px rgba(251, 191, 36, 0.55), 0 4px 30px rgba(0, 0, 0, 0.8);
+      perspective: 900px;
+    }
+    .inv-flip {
+      display: inline-block;
+      color: var(--truth-gold);
+      transform-origin: 50% 55%;
+    }
+    .inv-sub {
+      margin-top: 1.6rem;
+      font-family: var(--font-body);
+      font-weight: 300;
+      font-style: italic;
+      font-size: clamp(0.95rem, 1.5vw, 1.15rem);
+      color: rgba(255, 255, 255, 0.75);
+    }
+
+    /* ==========================================
+       FINALE: both readings, side by side
+       ========================================== */
+    .finale {
+      position: fixed;
+      inset: 0;
+      z-index: 120;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 6.5rem 1.5rem 3rem;
+      text-align: center;
+      pointer-events: none;
+      visibility: hidden;
+      background: radial-gradient(ellipse 80% 70% at 50% 50%, rgba(8, 6, 3, 0.82), rgba(8, 6, 3, 0.45) 70%, transparent);
+    }
+    .finale-kicker {
+      font-family: var(--font-mono);
+      font-size: 0.64rem;
+      letter-spacing: 0.45em;
+      text-transform: uppercase;
+      color: var(--truth-gold);
+      margin-bottom: 1rem;
+    }
+    .finale-title {
+      font-family: var(--font-display);
+      font-weight: 400;
+      font-size: clamp(1.6rem, 4.2vw, 3.4rem);
+      line-height: 1.1;
+      color: #fff;
+      text-transform: uppercase;
+      margin-bottom: clamp(1.5rem, 4vh, 3rem);
+    }
+    .finale-title em {
+      font-style: normal;
+      background: linear-gradient(135deg, #fff 10%, #fef08a 50%, #fbbf24 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .finale-columns {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: clamp(1rem, 4vw, 4rem);
+      max-width: 980px;
+      width: 100%;
+      text-align: left;
+    }
+    .finale-col .col-label {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+    .finale-col.fall .col-label { color: var(--accent); }
+    .finale-col.fly .col-label { color: var(--truth-gold); }
+    .finale-col ol { list-style: none; }
+    .finale-col li {
+      font-family: var(--font-display);
+      font-size: clamp(0.8rem, 1.55vw, 1.2rem);
+      line-height: 1.45;
+      padding: 0.12rem 0;
+    }
+    .finale-col.fall li {
+      color: rgba(200, 210, 235, 0.5);
+    }
+    .finale-col.fly li {
+      color: #fef3c7;
+      text-shadow: 0 0 22px rgba(251, 191, 36, 0.35);
+    }
+    .finale-divider {
+      width: 1px;
+      background: linear-gradient(to bottom, transparent, rgba(251, 191, 36, 0.6), transparent);
+    }
+    .finale-foot {
+      margin-top: clamp(1.8rem, 5vh, 3.2rem);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.9rem;
+    }
+    .finale .replay-btn { pointer-events: auto; }
+    .finale-note {
+      font-family: var(--font-body);
+      font-style: italic;
+      font-weight: 300;
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.5);
     }
 
     /* Reduced motion: keep the narrative, drop the movement */
@@ -774,9 +1154,15 @@
         animation-iteration-count: 1 !important;
         transition-duration: 0.001ms !important;
       }
-      .ascent-hint-chevron {
+      .ascent-hint-chevron,
+      .fx-grain,
+      .cue-line::after {
         animation: none !important;
       }
+    }
+
+    @media (max-width: 1100px) {
+      .transcript { display: none; }
     }
 
     /* Touch device rules: hide fake desktop kinetic cursor */
@@ -840,16 +1226,15 @@
       .ascent-hint-sub {
         font-size: 0.52rem;
       }
-      .replay-dock {
-        bottom: max(1.8rem, calc(1.2rem + env(safe-area-inset-bottom, 0px)));
-      }
+      .intro { padding: 17vh 1rem 6vh; }
+      .intro-title .t-sub { letter-spacing: 0.5em; margin-right: -0.5em; }
+      .finale { padding: 4.5rem 1rem 2rem; }
+      .finale-columns { gap: 0.9rem; }
+      .finale-col .col-label { font-size: 0.5rem; letter-spacing: 0.18em; }
       .replay-btn {
         padding: 0.5rem 1.3rem;
         font-size: 0.65rem;
         letter-spacing: 0.16em;
-      }
-      .replay-sub {
-        font-size: 0.52rem;
       }
       .loader-brand {
         font-size: 1.15rem;
@@ -900,6 +1285,32 @@
   <!-- Custom Kinetic Magnetic Cursor -->
   <div class="cursor-dot" id="cursor-dot"></div>
   <div class="cursor-ring" id="cursor-ring"></div>
+
+  <!-- Film grain & vignette (cinematic finish over the scene) -->
+  <div class="fx-vignette" aria-hidden="true"></div>
+  <div class="fx-grain" aria-hidden="true"></div>
+
+  <!-- Opening title sequence -->
+  <section class="intro" id="intro" aria-label="Introduction">
+    <div class="intro-head">
+      <p class="intro-kicker">A scroll poem in seven lines</p>
+      <h1 class="intro-title">
+        <span class="split-line t-main" data-split>Palindrome</span>
+        <span class="split-line t-sub" data-split>of a fall</span>
+      </h1>
+      <div class="intro-mirror" aria-hidden="true">Palindrome</div>
+    </div>
+    <div class="intro-foot">
+      <p class="intro-lede">Read it <em>falling</em>. Then read it <em>flying</em>.<br />The words stay. The meaning turns.</p>
+      <div class="scroll-cue"><span>Scroll to fall</span><span class="cue-line"></span></div>
+    </div>
+  </section>
+
+  <!-- The poem, assembling itself in the order it is read -->
+  <aside class="transcript" id="transcript" aria-hidden="true">
+    <div class="transcript-head"><span class="transcript-arrow">↓</span><span id="transcript-label">Reading falling</span></div>
+    <ol id="transcript-list"></ol>
+  </aside>
 
   <!-- 2D Cinematic Canvas -->
   <div class="canvas-container">
@@ -979,18 +1390,44 @@
     <span class="ascent-hint-sub">Mirror Bedrock Reached // Reverse Gravity</span>
   </aside>
 
-  <!-- Ambient Replay Dock (Minimalist, seamlessly blends with environment, appears at zenith) -->
-  <aside class="replay-dock" id="replay-dock" aria-live="polite">
-    <div class="replay-pill">
-      <button class="replay-btn interactive" id="replay-btn">
-        <span class="replay-icon">↺</span>
-        <span class="replay-text">EXPERIENCE AGAIN</span>
-      </button>
-      <span class="replay-sub">ZENITH REACHED // BEGIN FROM DESCENT</span>
+  <!-- Inversion: the turn at bedrock -->
+  <div class="letterbox top" id="letterbox-top"></div>
+  <div class="letterbox bottom" id="letterbox-bottom"></div>
+  <div class="inversion" id="inversion" aria-hidden="true">
+    <p class="inv-kicker">Bedrock // 0 ft // gravity inverted</p>
+    <h2 class="inv-line"><span class="inv-a">Now read it</span><br /><span class="inv-flip">backwards</span></h2>
+    <p class="inv-sub">The same seven lines. Rising.</p>
+  </div>
+
+  <!-- Finale: both readings of the palindrome, side by side (appears at zenith) -->
+  <section class="finale" id="finale" aria-labelledby="finale-title" aria-hidden="true">
+    <p class="finale-kicker">Zenith // the palindrome is complete</p>
+    <h2 class="finale-title" id="finale-title">Same words. <em>Opposite truth.</em></h2>
+    <div class="finale-columns">
+      <div class="finale-col fall">
+        <span class="col-label">↓ Read falling</span>
+        <ol id="finale-fall"></ol>
+      </div>
+      <div class="finale-divider" aria-hidden="true"></div>
+      <div class="finale-col fly">
+        <span class="col-label">↑ Read flying</span>
+        <ol id="finale-fly"></ol>
+      </div>
     </div>
-  </aside>
+    <div class="finale-foot">
+      <button class="replay-btn interactive" id="replay-btn" tabindex="-1">
+        <span class="replay-icon">↺</span>
+        <span class="replay-text">Fall again</span>
+      </button>
+      <span class="finale-note">Nothing was rewritten. Only the direction changed.</span>
+    </div>
+  </section>
+
+  <!-- Screen-reader narration of the poem as it is read -->
+  <div class="sr-only" id="sr-narration" aria-live="polite"></div>
 
   <!-- Application Entry -->
-  <script type="module" src="/main.js"></script>
 </body>
+
+<script src="/main.js" type="module"></script>
 </html>
