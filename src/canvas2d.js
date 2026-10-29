@@ -324,8 +324,10 @@ export class CanvasStoryEngine {
     this.scrollVelocity = scrollVelocity;
     this.truthMode = truthMode;
 
-    const figX = this.width * 0.5 + this.mouse.normX * 18;
-    const figY = this.height * 0.48 + Math.sin(time * 1.5) * 6;
+    const isTouchLayout = this.width <= 768;
+    const figX = this.width * 0.5 + (isTouchLayout ? 0 : this.mouse.normX * 18);
+    const figY =
+      this.height * 0.48 + (isTouchLayout ? 0 : Math.sin(time * 1.5) * 6);
 
     this.particleImageEngine.update(
       time,
@@ -445,8 +447,9 @@ export class CanvasStoryEngine {
     ctx.restore();
 
     // Boy's screen focal center for wake collision & focal drift
-    const figX = w * 0.5 + this.mouse.normX * 18;
-    const figY = h * 0.48 + Math.sin(t * 1.5) * 6;
+    const isTouchLayout = w <= 768;
+    const figX = w * 0.5 + (isTouchLayout ? 0 : this.mouse.normX * 18);
+    const figY = h * 0.48 + (isTouchLayout ? 0 : Math.sin(t * 1.5) * 6);
 
     // 3. High-Speed Vertical Slipstream Streaks (Clean editorial motion)
     this.renderSlipstreamStreaks(ctx, w, h, truth);

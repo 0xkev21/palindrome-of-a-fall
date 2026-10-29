@@ -131,36 +131,23 @@ function updatePointerPos(x, y) {
   mouseY = y;
 }
 
-window.addEventListener(
-  "mousemove",
-  (e) => updatePointerPos(e.clientX, e.clientY),
-  { passive: true },
-);
-window.addEventListener(
-  "touchmove",
-  (e) => {
-    if (e.touches && e.touches.length > 0) {
-      updatePointerPos(e.touches[0].clientX, e.touches[0].clientY);
-    }
-  },
-  { passive: true },
-);
-window.addEventListener(
-  "touchstart",
-  (e) => {
-    if (e.touches && e.touches.length > 0) {
-      updatePointerPos(e.touches[0].clientX, e.touches[0].clientY);
-    }
-  },
-  { passive: true },
-);
+if (!isTouchDevice) {
+  window.addEventListener(
+    "mousemove",
+    (e) => updatePointerPos(e.clientX, e.clientY),
+    { passive: true },
+  );
+}
 
-if (reduceMotion) {
+if (isTouchDevice) {
+  cursorDot?.remove();
+  cursorRing?.remove();
+} else if (reduceMotion) {
   // No trailing/eased cursor: track the pointer exactly, no per-frame motion.
   window.addEventListener("mousemove", () => {
     const t = `translate3d(${mouseX}px, ${mouseY}px, 0) translate(-50%, -50%)`;
-    cursorDot.style.transform = t;
-    cursorRing.style.transform = t;
+    cursorDot?.style.setProperty("transform", t);
+    cursorRing?.style.setProperty("transform", t);
   });
 } else {
   gsap.ticker.add(() => {
@@ -169,8 +156,14 @@ if (reduceMotion) {
     ringX += (mouseX - ringX) * 0.16;
     ringY += (mouseY - ringY) * 0.16;
 
-    cursorDot.style.transform = `translate3d(${dotX}px, ${dotY}px, 0) translate(-50%, -50%)`;
-    cursorRing.style.transform = `translate3d(${ringX}px, ${ringY}px, 0) translate(-50%, -50%)`;
+    cursorDot?.style.setProperty(
+      "transform",
+      `translate3d(${dotX}px, ${dotY}px, 0) translate(-50%, -50%)`,
+    );
+    cursorRing?.style.setProperty(
+      "transform",
+      `translate3d(${ringX}px, ${ringY}px, 0) translate(-50%, -50%)`,
+    );
   });
 }
 
@@ -580,7 +573,9 @@ function animate() {
     const tilt = (normX * 4 - state.scrollVelocity * 0.12) * motion;
     const soarLift = state.truthMode * (reduceMotion ? -8 : -24);
 
-    charContainer.style.transform = `translate(-50%, -50%) translate3d(${normX * 16 * motion}px, ${breathY + soarLift}px, 0) rotate(${tilt}deg)`;
+    charContainer.style.transform = isTouchDevice
+      ? "translate(-50%, -50%)"
+      : `translate(-50%, -50%) translate3d(${normX * 16 * motion}px, ${breathY + soarLift}px, 0) rotate(${tilt}deg)`;
   }
 }
 

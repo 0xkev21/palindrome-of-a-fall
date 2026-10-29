@@ -11,6 +11,7 @@ const vertexShader = `
   uniform float uTime;
   uniform float uTruth;
   uniform float uVelocity;
+  uniform float uPixelRatio;
 
   attribute vec3 aBasePos;
   attribute float aDepth;
@@ -52,7 +53,7 @@ const vertexShader = `
     vec2 screen = uCenter + pos.xy * uSize;
     vec2 clip = screen / uResolution * 2.0 - 1.0;
     gl_Position = vec4(clip, pos.z * 0.001, 1.0);
-    gl_PointSize = mix(0.7, 1.75, aDepth) * (1.0 + uTruth * 0.15);
+    gl_PointSize = mix(0.7, 1.75, aDepth) * uPixelRatio * (1.0 + uTruth * 0.15);
 
     vColor = aColor;
     vDepth = aDepth;
@@ -136,6 +137,7 @@ export class BoyParticleHalo {
       uTime: { value: 0 },
       uTruth: { value: 0 },
       uVelocity: { value: 0 },
+      uPixelRatio: { value: 1 },
     };
 
     this.material = new THREE.ShaderMaterial({
@@ -216,16 +218,19 @@ export class BoyParticleHalo {
     this.mode = mode;
   }
 
-  update(time, velocity, truth, width, height, centerX, centerY) {
+  update(time, velocity, truth, width, height, centerX, centerY, figureSize, pixelRatio) {
     const mode = truth > 0.5 ? "truth" : "descent";
     if (this.sources[mode] && this.mode !== mode) this.rasterize(mode);
 
-    const size = Math.min(width * (width < 640 ? 0.7 : 0.5), 560);
     this.uniforms.uResolution.value.set(width, height);
     this.uniforms.uCenter.value.set(centerX, height - centerY);
-    this.uniforms.uSize.value.set(size, size * (mode === "truth" ? 0.85 : 0.7));
+    this.uniforms.uSize.value.set(
+      figureSize,
+      figureSize * (mode === "truth" ? 460 / 540 : 350 / 500),
+    );
     this.uniforms.uTime.value = time;
     this.uniforms.uTruth.value = truth;
     this.uniforms.uVelocity.value = velocity;
+    this.uniforms.uPixelRatio.value = pixelRatio;
   }
 }

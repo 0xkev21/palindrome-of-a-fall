@@ -118,8 +118,8 @@ export class ParticleImageEngine {
 
     // Three.js Scene Setup
     this.canvas = document.createElement("canvas");
-    this.canvas.width = window.innerWidth;
-    this.canvas.height = window.innerHeight;
+    this.renderWidth = window.innerWidth;
+    this.renderHeight = window.innerHeight;
 
     this.renderer = new THREE.WebGLRenderer({
       canvas: this.canvas,
@@ -127,7 +127,8 @@ export class ParticleImageEngine {
       antialias: true,
       powerPreference: "high-performance",
     });
-    this.renderer.setPixelRatio(1);
+    this.pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+    this.renderer.setPixelRatio(this.pixelRatio);
     this.renderer.setSize(window.innerWidth, window.innerHeight);
 
     this.scene = new THREE.Scene();
@@ -422,6 +423,10 @@ export class ParticleImageEngine {
       h,
       boyX,
       boyY,
+      w < 768
+        ? Math.min(300, Math.max(210, w * 0.62))
+        : Math.min(560, Math.max(340, w * 0.48)),
+      this.pixelRatio,
     );
 
     const waveT =
@@ -433,9 +438,11 @@ export class ParticleImageEngine {
   }
 
   render(ctx, w, h, truth) {
-    if (this.canvas.width !== w || this.canvas.height !== h) {
-      this.canvas.width = w;
-      this.canvas.height = h;
+    if (this.renderWidth !== w || this.renderHeight !== h) {
+      this.renderWidth = w;
+      this.renderHeight = h;
+      this.pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+      this.renderer.setPixelRatio(this.pixelRatio);
       this.renderer.setSize(w, h, false);
       this.uniforms.uResolution.value.set(w, h);
     }
